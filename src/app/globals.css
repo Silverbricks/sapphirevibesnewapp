@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --font-serif: "Cormorant Garamond", serif;
+    --font-sans: "Jost", system-ui, sans-serif;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-bg text-cream font-sans font-light antialiased;
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+    font-weight: 500;
+    line-height: 1.05;
+  }
+  ::selection {
+    background: rgba(200, 164, 92, 0.3);
+    color: #fff;
+  }
+  input,
+  textarea,
+  select {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  /* page container */
+  .wrap {
+    @apply mx-auto w-full max-w-[1280px] px-7;
+  }
+  .wrap-narrow {
+    @apply mx-auto w-full max-w-[1180px] px-6;
+  }
+  /* luxe eyebrow label */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.34em] text-gold;
+  }
+  /* gold radial glow background helper */
+  .glow-gold {
+    background-image: radial-gradient(
+      ellipse at top right,
+      rgba(200, 164, 92, 0.16),
+      transparent 60%
+    );
+  }
+  .glow-purple {
+    background-image: radial-gradient(
+      ellipse at top right,
+      rgba(155, 125, 212, 0.18),
+      transparent 60%
+    );
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .border-line {
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+  .border-line-gold {
+    border-color: rgba(200, 164, 92, 0.2);
+  }
+}
+
+/* global thin scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 164, 92, 0.3);
+}
