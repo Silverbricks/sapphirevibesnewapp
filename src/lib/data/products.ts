@@ -13,6 +13,7 @@ export const productCardSelect = {
   ratingCount: true,
   badges: true,
   stock: true,
+  description: true,
   brand: { select: { name: true } },
   images: {
     take: 1,

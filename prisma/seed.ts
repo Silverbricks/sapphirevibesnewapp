@@ -199,7 +199,7 @@ async function main() {
   // ── Orders ──────────────────────────────────────────────────────────────
   const GST = 0.1;
   async function makeOrder(
-    number: string, user: { id: string; name: string } | null,
+    number: string, user: { id: string; name: string | null } | null,
     lines: { sku: string; qty: number }[],
     opts: { status: string; payment: string; method: string; placedAt: string; tracking?: string; carrier?: string; guestEmail?: string },
   ) {
