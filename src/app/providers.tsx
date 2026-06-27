@@ -1,10 +1,11 @@
 "use client";
 
 import { Toaster } from "sonner";
+import { StoreProvider } from "@/components/storefront/store-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <StoreProvider>
       {children}
       <Toaster
         theme="dark"
@@ -17,6 +18,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }}
       />
-    </>
+    </StoreProvider>
   );
 }
