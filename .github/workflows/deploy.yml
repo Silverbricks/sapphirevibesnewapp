@@ -1,0 +1,34 @@
+# Auto-deploy to the Hostinger VPS on every push to main.
+# It SSHes into the VPS, pulls the latest code from GitHub, and restarts the app.
+#
+# Set these in GitHub → repo → Settings → Secrets and variables → Actions:
+#   VPS_HOST     your VPS IP address (e.g. 123.45.67.89)
+#   VPS_USER     SSH user (e.g. root)
+#   VPS_SSH_KEY  a PRIVATE SSH key whose public half is in the VPS's ~/.ssh/authorized_keys
+#
+# One-time on the VPS: clone the repo to /var/www/sapphire and do the first build (see DEPLOY.md).
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /var/www/sapphire
+            git pull origin main
+            npm ci
+            npx prisma migrate deploy
+            npm run build
+            pm2 restart sapphire

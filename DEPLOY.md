@@ -74,11 +74,37 @@ postgresql://sapphire:CHOOSE_A_STRONG_PASSWORD@localhost:5432/sapphire
 > When the app runs **on the VPS**, it talks to Postgres over `localhost` — you do **not** need to
 > expose port 5432 to the internet. Keep it closed for security.
 
-### 2.4 Get the code from GitHub onto the VPS
+### 2.4 Get the code from GitHub onto the VPS (this is "the link")
 
+Because the repo is **private**, the VPS needs permission to read it. Pick ONE:
+
+**A) Deploy key (recommended — read-only, no password):**
+```bash
+ssh-keygen -t ed25519 -C "vps-deploy" -f ~/.ssh/sapphire_deploy -N ""
+cat ~/.ssh/sapphire_deploy.pub        # copy this
+```
+GitHub → repo → **Settings → Deploy keys → Add deploy key** → paste the public key (read-only).
+Then on the VPS:
+```bash
+cat >> ~/.ssh/config <<'CFG'
+Host github-sapphire
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/sapphire_deploy
+CFG
+cd /var/www
+git clone git@github-sapphire:Silverbricks/sapphirevibesnewapp.git sapphire
+```
+
+**B) Personal Access Token (quick):** GitHub → Settings → Developer settings →
+Fine-grained tokens → grant read access to the repo, then:
 ```bash
 cd /var/www
-git clone https://github.com/Silverbricks/sapphirevibesnewapp.git sapphire
+git clone https://YOUR_TOKEN@github.com/Silverbricks/sapphirevibesnewapp.git sapphire
+```
+
+Then install dependencies:
+```bash
 cd sapphire
 npm install
 ```
@@ -160,7 +186,21 @@ npm run build
 pm2 restart sapphire
 ```
 
-(You can wrap this in a `deploy.sh` script or a GitHub Action later for one-command deploys.)
+### Automatic deploy on every push (CI/CD)
+
+This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which SSHes into
+the VPS and runs the pull/build/restart for you whenever you push to `main`. To enable it:
+
+1. On the VPS, allow GitHub Actions to SSH in — add the **public** half of an SSH key to
+   `~/.ssh/authorized_keys` (you can reuse a dedicated key pair).
+2. In GitHub → repo → **Settings → Secrets and variables → Actions**, add:
+   - `VPS_HOST` → your VPS IP
+   - `VPS_USER` → e.g. `root`
+   - `VPS_SSH_KEY` → the **private** key matching step 1
+3. Do the one-time clone + first build on the VPS (section 2). After that, every `git push`
+   auto-deploys.
+
+Until those secrets are set, the workflow simply does nothing — it won't break your pushes.
 
 ---
 
