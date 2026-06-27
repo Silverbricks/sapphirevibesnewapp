@@ -73,7 +73,9 @@ pm2 save
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
 echo "==> [8/8] Configuring nginx"
-cat > /etc/nginx/sites-available/sapphire <<'NGINX'
+# Don't clobber an existing config (it may already hold a domain + HTTPS from link-domain.sh).
+if [ ! -f /etc/nginx/sites-available/sapphire ]; then
+  cat > /etc/nginx/sites-available/sapphire <<'NGINX'
 server {
     listen 80;
     server_name _;
@@ -87,8 +89,11 @@ server {
     }
 }
 NGINX
-ln -sf /etc/nginx/sites-available/sapphire /etc/nginx/sites-enabled/sapphire
-rm -f /etc/nginx/sites-enabled/default
+  ln -sf /etc/nginx/sites-available/sapphire /etc/nginx/sites-enabled/sapphire
+  rm -f /etc/nginx/sites-enabled/default
+else
+  echo "    Existing nginx config kept (domain/HTTPS preserved)."
+fi
 nginx -t && systemctl reload nginx
 ufw allow 80/tcp >/dev/null 2>&1 || true
 
