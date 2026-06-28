@@ -60,6 +60,31 @@
       transparent 60%
     );
   }
+
+  /* admin / console data tables */
+  .atable {
+    @apply w-full border-collapse;
+  }
+  .atable th {
+    @apply border-b border-line px-3.5 py-3 text-left text-[10px] font-medium uppercase tracking-[0.16em] text-muted;
+  }
+  .atable td {
+    @apply border-b border-line px-3.5 py-3.5 align-middle text-[13px];
+  }
+  .atable tbody tr:last-child td {
+    @apply border-0;
+  }
+  .atable tbody tr:hover {
+    @apply bg-white/[0.02];
+  }
+
+  /* filter chips */
+  .fchip {
+    @apply cursor-pointer rounded-lg border border-line bg-panel px-4 py-2 text-xs text-grey transition-colors hover:border-line-gold;
+  }
+  .fchip-on {
+    @apply border-gold bg-gold text-ink hover:border-gold;
+  }
 }
 
 @layer utilities {
