@@ -94,6 +94,28 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return { ok: true as const };
 }
 
+export async function toggleHomepageBlock(id: string, isVisible: boolean) {
+  await requireStaff();
+  await db.homepageBlock.update({ where: { id }, data: { isVisible } });
+  revalidatePath("/admin/homepage");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+export async function reorderHomepageBlock(id: string, direction: "up" | "down") {
+  await requireStaff();
+  const blocks = await db.homepageBlock.findMany({ orderBy: { position: "asc" } });
+  const idx = blocks.findIndex((b) => b.id === id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= blocks.length) return;
+  await db.$transaction([
+    db.homepageBlock.update({ where: { id: blocks[idx].id }, data: { position: blocks[swapIdx].position } }),
+    db.homepageBlock.update({ where: { id: blocks[swapIdx].id }, data: { position: blocks[idx].position } }),
+  ]);
+  revalidatePath("/admin/homepage");
+  revalidatePath("/");
+}
+
 export async function moderateReview(id: string, status: string) {
   const staff = await requireStaff();
   await db.review.update({ where: { id }, data: { status: status as ReviewStatus } });

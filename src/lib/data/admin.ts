@@ -5,6 +5,11 @@ const NON_CANCELLED = {
   status: { notIn: [OrderStatus.CANCELLED, OrderStatus.REFUNDED] },
 };
 const CUSTOMER_ROLES: Role[] = [Role.CUSTOMER, Role.INTERIOR_DESIGNER, Role.CORPORATE];
+const STAFF_ROLES_LIST: Role[] = [
+  Role.SUPER_ADMIN, Role.ADMIN, Role.INVENTORY_MANAGER, Role.CATALOGUE_MANAGER,
+  Role.CONTENT_EDITOR, Role.ORDER_FULFILMENT, Role.MARKETING_MANAGER,
+  Role.FINANCE_MANAGER, Role.CUSTOMER_SUPPORT,
+];
 
 export async function getAdminDashboard() {
   const now = new Date();
@@ -161,6 +166,35 @@ export async function getAdminReviews(status?: string) {
     orderBy: { createdAt: "desc" },
     include: { product: { select: { name: true } }, user: { select: { name: true } } },
   });
+}
+
+export async function getTeamData() {
+  const [staff, logs] = await Promise.all([
+    db.user.findMany({
+      where: { role: { in: STAFF_ROLES_LIST } },
+      orderBy: { lastActiveAt: "desc" },
+      select: { id: true, name: true, email: true, role: true, twoFactorEnabled: true, lastActiveAt: true },
+    }),
+    db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 12 }),
+  ]);
+  return { staff, logs };
+}
+
+export async function getContentData() {
+  const [pages, posts] = await Promise.all([
+    db.page.findMany({ orderBy: { title: "asc" } }),
+    db.blogPost.findMany({ orderBy: { publishedAt: "desc" } }),
+  ]);
+  return { pages, posts };
+}
+
+export async function getSettingsData() {
+  const [settings, integrations] = await Promise.all([
+    db.setting.findMany(),
+    db.integration.findMany({ orderBy: { name: "asc" } }),
+  ]);
+  const map = Object.fromEntries(settings.map((s) => [s.key, s.value])) as Record<string, unknown>;
+  return { settings: map, integrations };
 }
 
 export async function getAdminReports() {
