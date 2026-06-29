@@ -82,12 +82,39 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
         </Panel>
 
         <Panel>
-          <h3 className="mb-4 font-serif text-xl">Description &amp; Media</h3>
+          <h3 className="mb-4 font-serif text-xl">Description</h3>
           <FormField label="Description"><Textarea name="description" defaultValue={product?.description ?? ""} /></FormField>
           <FormField label="Care Instructions"><Input name="careInstructions" defaultValue={product?.careInstructions ?? ""} /></FormField>
-          <FormField label="Featured Image URL"><Input name="imageUrl" placeholder="https://images.unsplash.com/..." /></FormField>
+        </Panel>
+
+        <Panel>
+          <h3 className="mb-4 font-serif text-xl">Media</h3>
+          <FormField label="Upload Featured Image">
+            <input
+              type="file"
+              name="imageFile"
+              accept="image/*"
+              className="block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold-soft"
+            />
+          </FormField>
+          <FormField label="…or paste an image URL">
+            <Input name="imageUrl" placeholder="https://images.unsplash.com/..." />
+          </FormField>
           {product?.images[0] && (
-            <Image src={product.images[0].url} alt={product.name} width={80} height={80} className="h-20 w-20 rounded-lg object-cover" />
+            <div className="mb-4">
+              <div className="mb-1.5 text-[11px] uppercase tracking-[0.12em] text-muted">Current image</div>
+              <Image src={product.images[0].url} alt={product.name} width={80} height={80} className="h-20 w-20 rounded-lg object-cover" />
+            </div>
+          )}
+          <FormField label="Video link — YouTube, Instagram or TikTok">
+            <Input
+              name="videoUrl"
+              defaultValue={product?.videoUrl ?? ""}
+              placeholder="https://youtube.com/watch?v=…  ·  instagram.com/reel/…  ·  tiktok.com/@…/video/…"
+            />
+          </FormField>
+          {product?.videoUrl && (
+            <p className="text-xs text-muted">Current video: <span className="text-gold">{product.videoUrl}</span></p>
           )}
         </Panel>
 

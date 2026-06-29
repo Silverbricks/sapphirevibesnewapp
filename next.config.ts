@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Server Actions are enabled by default in Next 15; keep body size generous for image data URLs.
     serverActions: {
-      bodySizeLimit: "4mb",
+      bodySizeLimit: "8mb",
     },
   },
 };

@@ -345,6 +345,7 @@ model Product {
   tags             String[]
   seoTitle         String?
   seoDescription   String?
+  videoUrl         String?
 
   brandId    String?
   brand      Brand?    @relation(fields: [brandId], references: [id])

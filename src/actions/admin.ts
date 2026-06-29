@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth-helpers";
 import { slugify } from "@/lib/utils";
+import { saveUploadedImage } from "@/lib/upload";
 import type {
   ProductBadge,
   ProductStatus,
@@ -46,10 +47,13 @@ export async function saveProduct(formData: FormData) {
     careInstructions: (formData.get("careInstructions") as string) || null,
     seoTitle: (formData.get("seoTitle") as string) || null,
     seoDescription: (formData.get("seoDescription") as string) || null,
+    videoUrl: (formData.get("videoUrl") as string)?.trim() || null,
     categoryId,
     brandId: (formData.get("brandId") as string) || null,
   };
-  const imageUrl = (formData.get("imageUrl") as string)?.trim();
+  // Image: prefer an uploaded file, else a pasted URL.
+  const uploaded = await saveUploadedImage(formData.get("imageFile") as File | null);
+  const imageUrl = uploaded || (formData.get("imageUrl") as string)?.trim();
 
   if (id) {
     await db.product.update({ where: { id }, data });

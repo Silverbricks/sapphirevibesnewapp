@@ -6,6 +6,7 @@ import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { PdpBuyBox } from "@/components/storefront/PdpBuyBox";
 import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { SectionHead } from "@/components/storefront/sections";
+import { VideoEmbed } from "@/components/storefront/VideoEmbed";
 import { formatDate } from "@/lib/format";
 import type { ProductBadgeKey } from "@/lib/badges";
 
@@ -99,6 +100,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </dl>
           </div>
         </div>
+
+        {/* video */}
+        {product.videoUrl && (
+          <section className="mt-16">
+            <h2 className="mb-5 font-serif text-3xl">Product Video</h2>
+            <VideoEmbed url={product.videoUrl} />
+          </section>
+        )}
 
         {/* reviews */}
         <section className="mt-20 border-t border-line pt-12">

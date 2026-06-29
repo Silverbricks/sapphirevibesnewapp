@@ -37,3 +37,6 @@ yarn-error.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# runtime uploads
+/public/uploads
