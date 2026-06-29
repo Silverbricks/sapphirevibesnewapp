@@ -59,7 +59,8 @@ export async function loginAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const callbackUrl = (formData.get("callbackUrl") as string) || "/account";
+  // empty callbackUrl → /post-login routes staff to /admin, customers to /account
+  const callbackUrl = (formData.get("callbackUrl") as string) || "/post-login";
   try {
     await signIn("credentials", {
       email: formData.get("email"),

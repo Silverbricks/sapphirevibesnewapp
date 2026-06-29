@@ -1,7 +1,7 @@
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireUser, isStaffRole } from "@/lib/auth-helpers";
 import { getUserProfile, getAccountSummary } from "@/lib/data/account";
 import { db } from "@/lib/db";
 
@@ -26,6 +26,7 @@ export default async function AccountLayout({
           email={profile?.email ?? ""}
           tier={profile?.vipTier?.name ?? "Silver"}
           counts={{ orders: summary.inProgress, wishlist: wishlistCount }}
+          isStaff={isStaffRole(sessionUser.role)}
         />
         <main className="min-w-0">{children}</main>
       </div>

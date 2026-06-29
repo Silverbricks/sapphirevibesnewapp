@@ -13,6 +13,7 @@ import {
   MapPin,
   Settings,
   LogOut,
+  Shield,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,11 +39,13 @@ export function AccountSidebar({
   email,
   tier,
   counts,
+  isStaff = false,
 }: {
   name: string;
   email: string;
   tier: string;
   counts: { orders: number; wishlist: number };
+  isStaff?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -54,6 +57,15 @@ export function AccountSidebar({
       <div className="mb-5 mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-gold/[0.12] px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-gold">
         ★ {tier} Member
       </div>
+
+      {isStaff && (
+        <Link
+          href="/admin"
+          className="mb-3 flex items-center justify-center gap-2 rounded-lg border border-line-gold bg-gold/10 py-2.5 text-xs uppercase tracking-[0.12em] text-gold transition-colors hover:bg-gold hover:text-ink"
+        >
+          <Shield className="h-4 w-4" /> Admin Console →
+        </Link>
+      )}
 
       <nav className="flex flex-col gap-0.5 border-t border-line pt-4">
         {NAV.map((item) => {
