@@ -18,6 +18,9 @@ export const STAFF_ROLES = [
  * the `jwt` callback (which queries Prisma) lives in auth.ts so it never enters the edge bundle.
  */
 export const authConfig = {
+  // Behind a reverse proxy (nginx on the VPS) the host must be trusted, else
+  // Auth.js rejects the sign-in POST as an untrusted host.
+  trustHost: true,
   pages: { signIn: "/login" },
   providers: [],
   callbacks: {

@@ -10,6 +10,16 @@ DB_NAME=sapphire
 DB_USER=sapphire
 DB_PASS="$(openssl rand -hex 16)"
 
+echo "==> [0/8] Ensuring swap (prevents next build OOM on small VPS plans)"
+if [ "$(swapon --show | wc -l)" -eq 0 ]; then
+  if [ ! -f /swapfile ]; then
+    fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048
+    chmod 600 /swapfile
+    mkswap /swapfile
+  fi
+  swapon /swapfile || true
+fi
+
 echo "==> [1/8] Installing system packages"
 apt-get update -y
 apt-get install -y curl git nginx postgresql openssl
