@@ -5,9 +5,28 @@
  *
  * ADMIN_ROLE defaults to SUPER_ADMIN (full admin + marketing access).
  */
+import fs from "node:fs";
+import path from "node:path";
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+// Load .env (DATABASE_URL etc.) before the Prisma client connects — no extra dependency.
+function loadEnv() {
+  try {
+    const env = fs.readFileSync(path.resolve(process.cwd(), ".env"), "utf8");
+    for (const line of env.split("\n")) {
+      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (!m || process.env[m[1]] !== undefined) continue;
+      let v = m[2].trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      process.env[m[1]] = v;
+    }
+  } catch {
+    /* .env optional */
+  }
+}
+
+loadEnv();
 const db = new PrismaClient();
 
 async function main() {
