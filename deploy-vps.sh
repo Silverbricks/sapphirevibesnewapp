@@ -63,11 +63,14 @@ echo "==> [5/8] Installing dependencies"
 npm install --no-audit --no-fund
 
 echo "==> [6/8] Writing .env"
-PUBLIC_IP="$(curl -s ifconfig.me || echo localhost)"
+# Force IPv4 — a bare IPv6 host makes an invalid URL and crashes Auth.js.
+PUBLIC_IP="$(curl -s -4 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
+[ -z "$PUBLIC_IP" ] && PUBLIC_IP="localhost"
 cat > .env <<ENV
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}"
 AUTH_SECRET="$(openssl rand -base64 32)"
 NEXTAUTH_URL="http://${PUBLIC_IP}"
+AUTH_URL="http://${PUBLIC_IP}"
 AUTH_GOOGLE_ID=""
 AUTH_GOOGLE_SECRET=""
 ENV
