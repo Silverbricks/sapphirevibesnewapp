@@ -44,7 +44,7 @@ export function AdminSidebar({
       title: "Storefront",
       items: [
         { href: "/admin/homepage", label: "Homepage CMS", icon: Home },
-        { href: "/admin/content", label: "Pages & Blog", icon: FileText },
+        { href: "/admin/content", label: "Content CMS", icon: FileText },
         { href: "/admin/seo", label: "SEO", icon: Search },
       ],
     },

@@ -85,6 +85,44 @@
   .fchip-on {
     @apply border-gold bg-gold text-ink hover:border-gold;
   }
+
+  /* rich-text / CMS body content (editor surface + storefront articles) */
+  .prose-luxury {
+    @apply text-[15px] leading-relaxed text-grey;
+  }
+  .prose-luxury h2 {
+    @apply mb-3 mt-8 font-serif text-[28px] leading-tight text-cream;
+  }
+  .prose-luxury h3 {
+    @apply mb-2 mt-6 font-serif text-[22px] leading-tight text-cream;
+  }
+  .prose-luxury p {
+    @apply mb-4;
+  }
+  .prose-luxury a {
+    @apply text-gold underline decoration-gold/40 underline-offset-2 hover:text-gold-soft;
+  }
+  .prose-luxury ul {
+    @apply mb-4 list-disc space-y-1.5 pl-6;
+  }
+  .prose-luxury ol {
+    @apply mb-4 list-decimal space-y-1.5 pl-6;
+  }
+  .prose-luxury li::marker {
+    color: #c8a45c;
+  }
+  .prose-luxury blockquote {
+    @apply my-6 border-l-2 border-gold pl-5 font-serif text-[19px] italic text-cream;
+  }
+  .prose-luxury img {
+    @apply my-6 w-full rounded-panel border border-line;
+  }
+  .prose-luxury strong {
+    @apply font-semibold text-cream;
+  }
+  .prose-luxury hr {
+    @apply my-8 border-line;
+  }
 }
 
 @layer utilities {

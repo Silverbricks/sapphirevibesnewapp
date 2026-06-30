@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPageBySlug, getFaqs } from "@/lib/data/content";
+import { isHtml } from "@/lib/cms";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ export default async function StaticPage({ params }: { params: Promise<{ slug: s
               </details>
             ))}
           </div>
+        ) : isHtml(page.body) ? (
+          <div className="prose-luxury" dangerouslySetInnerHTML={{ __html: page.body }} />
         ) : (
           <div className="whitespace-pre-line text-[15px] leading-relaxed text-grey">{body}</div>
         )}

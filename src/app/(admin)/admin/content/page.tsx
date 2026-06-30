@@ -1,48 +1,40 @@
-import { getContentData } from "@/lib/data/admin";
-import { Panel, PanelHead, Pill, buttonClasses, type PillColor } from "@/components/ui";
+import Link from "next/link";
+import { FileText, Newspaper, HelpCircle, Quote, MessageSquare, ArrowRight } from "lucide-react";
+import { getContentCounts } from "@/lib/data/content";
+import { Panel } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
-import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pages & Blog · Admin" };
+export const metadata = { title: "Content CMS · Admin" };
 
-const STATUS_COLOR: Record<string, PillColor> = {
-  PUBLISHED: "green",
-  DRAFT: "amber",
-  SCHEDULED: "gold",
-};
+export default async function ContentHubPage() {
+  const c = await getContentCounts();
 
-export default async function ContentPage() {
-  const { pages, posts } = await getContentData();
+  const cards = [
+    { href: "/admin/content/blog", icon: Newspaper, title: "Blog Posts", desc: "Write, schedule and publish articles.", count: `${c.posts} posts` },
+    { href: "/admin/content/pages", icon: FileText, title: "Pages", desc: "About, policies and custom pages.", count: `${c.pages} pages` },
+    { href: "/admin/content/faqs", icon: HelpCircle, title: "FAQs", desc: "Questions shown on the help page.", count: `${c.faqs} FAQs` },
+    { href: "/admin/content/testimonials", icon: Quote, title: "Testimonials", desc: "Customer quotes on the homepage.", count: `${c.testimonials} quotes` },
+    { href: "/admin/content/comments", icon: MessageSquare, title: "Comments", desc: "Moderate reader comments.", count: c.pendingComments ? `${c.pendingComments} pending` : "All clear" },
+  ];
+
   return (
     <>
-      <PageHead
-        title="Pages & Blog"
-        subtitle="Static pages, blog posts, FAQs and policies."
-        actions={<span className={buttonClasses("gold", "md")}>+ New Page</span>}
-      />
-      <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-2">
-        <Panel>
-          <PanelHead title="Static Pages" />
-          {pages.map((p) => (
-            <div key={p.id} className="flex items-center justify-between border-b border-line py-3.5 last:border-0">
-              <b className="text-sm font-normal">{p.title}</b>
-              <Pill color={STATUS_COLOR[p.status] ?? "grey"}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</Pill>
-            </div>
-          ))}
-        </Panel>
-        <Panel>
-          <PanelHead title="Blog Posts" />
-          {posts.map((p) => (
-            <div key={p.id} className="flex items-center justify-between border-b border-line py-3.5 last:border-0">
-              <div>
-                <b className="text-sm font-normal">{p.title}</b>
-                <small className="block text-xs text-muted">{p.category} · {formatNumber(p.views)} views</small>
+      <PageHead title="Content CMS" subtitle="Manage blog posts, pages, FAQs, testimonials and reader comments." />
+      <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((card) => (
+          <Link key={card.href} href={card.href} className="group">
+            <Panel className="h-full transition-colors group-hover:border-line-gold">
+              <div className="mb-3 flex items-center justify-between">
+                <card.icon className="h-6 w-6 text-gold" strokeWidth={1.5} />
+                <ArrowRight className="h-4 w-4 text-muted transition-transform group-hover:translate-x-1 group-hover:text-gold" />
               </div>
-              <Pill color={STATUS_COLOR[p.status] ?? "grey"}>{p.status === "PUBLISHED" ? "Live" : p.status.charAt(0) + p.status.slice(1).toLowerCase()}</Pill>
-            </div>
-          ))}
-        </Panel>
+              <h3 className="font-serif text-xl">{card.title}</h3>
+              <p className="mt-1 text-sm text-muted">{card.desc}</p>
+              <div className="mt-4 text-[11px] uppercase tracking-[0.14em] text-gold">{card.count}</div>
+            </Panel>
+          </Link>
+        ))}
       </div>
     </>
   );

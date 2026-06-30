@@ -800,6 +800,22 @@ model BlogPost {
   views       Int           @default(0)
   publishedAt DateTime?
   createdAt   DateTime      @default(now())
+  // { author, tags[], featured, pinned, allowComments, readingTime, gallery[], scheduledAt }
+  meta        Json?
+  comments    BlogComment[]
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    String
+  email     String?
+  body      String   @db.Text
+  status    String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt DateTime @default(now())
+
+  @@index([postId])
 }
 
 model Faq {
