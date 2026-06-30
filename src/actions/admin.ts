@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { requireStaff } from "@/lib/auth-helpers";
+import { requireStaff, requireRole } from "@/lib/auth-helpers";
 import { slugify } from "@/lib/utils";
 import { saveUploadedImage } from "@/lib/upload";
+import { Role } from "@prisma/client";
 import type {
   ProductBadge,
   ProductStatus,
@@ -118,6 +120,41 @@ export async function reorderHomepageBlock(id: string, direction: "up" | "down")
   ]);
   revalidatePath("/admin/homepage");
   revalidatePath("/");
+}
+
+export type StaffState = { error?: string; ok?: boolean } | undefined;
+
+/** Create or update a staff member (super-admin only). */
+export async function saveStaffMember(_prev: StaffState, formData: FormData): Promise<StaffState> {
+  const actor = await requireRole(Role.SUPER_ADMIN);
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const name = (formData.get("name") as string)?.trim() || "Staff";
+  const role = formData.get("role") as Role;
+  const password = formData.get("password") as string;
+  if (!email || !role) return { error: "Email and role are required." };
+
+  const existing = await db.user.findUnique({ where: { email } });
+  const hash = password && password.length >= 6 ? await bcrypt.hash(password, 10) : undefined;
+  if (!existing && !hash) return { error: "Set a password (min 6 chars) for a new member." };
+
+  await db.user.upsert({
+    where: { email },
+    update: { name, role, ...(hash ? { passwordHash: hash } : {}) },
+    create: {
+      email, name, role, passwordHash: hash!,
+      referralCode: `STAFF${Math.floor(1000 + Math.random() * 9000)}`,
+    },
+  });
+  await db.auditLog.create({ data: { actorName: actor.name, action: existing ? "Updated staff member" : "Invited staff member", targetType: "User", meta: { email, role } } });
+  revalidatePath("/admin/team");
+  return { ok: true };
+}
+
+export async function updateStaffRole(userId: string, role: string) {
+  const actor = await requireRole(Role.SUPER_ADMIN);
+  await db.user.update({ where: { id: userId }, data: { role: role as Role } });
+  await db.auditLog.create({ data: { actorName: actor.name, action: "Changed staff role", targetType: "User", targetId: userId, meta: { role } } });
+  revalidatePath("/admin/team");
 }
 
 export async function moderateReview(id: string, status: string) {

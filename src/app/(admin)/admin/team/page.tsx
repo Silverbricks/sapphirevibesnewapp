@@ -1,49 +1,24 @@
 import { getTeamData } from "@/lib/data/admin";
-import { Panel, PanelHead, Pill, Avatar, buttonClasses } from "@/components/ui";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { Panel, PanelHead } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
+import { StaffTable } from "@/components/admin/StaffTable";
 import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Team & Access · Admin" };
 
-function roleLabel(role: string) {
-  return role.split("_").map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
-}
-
 export default async function TeamPage() {
-  const { staff, logs } = await getTeamData();
+  const [{ staff, logs }, me] = await Promise.all([getTeamData(), getCurrentUser()]);
+  const canManage = me?.role === "SUPER_ADMIN";
+
   return (
     <>
-      <PageHead
-        title="Team & Access"
-        subtitle="Admin accounts, roles, activity logs and security."
-        actions={<span className={buttonClasses("gold", "md")}>+ Invite Member</span>}
-      />
+      <PageHead title="Team & Access" subtitle="Admin accounts, roles, activity logs and security." />
 
-      <Panel className="mb-[18px] overflow-x-auto p-0">
-        <table className="atable">
-          <thead><tr><th>Member</th><th>Role</th><th>2FA</th><th>Last Active</th><th>Status</th></tr></thead>
-          <tbody>
-            {staff.map((m) => (
-              <tr key={m.id}>
-                <td>
-                  <div className="flex items-center gap-3">
-                    <Avatar name={m.name ?? "?"} size={38} />
-                    <div>
-                      <div className="text-cream">{m.name}</div>
-                      <div className="text-[11px] text-muted">{m.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td><Pill color={m.role === "SUPER_ADMIN" ? "gold" : "blue"}>{roleLabel(m.role)}</Pill></td>
-                <td>{m.twoFactorEnabled ? <Pill color="green">Enabled</Pill> : <Pill color="amber">Off</Pill>}</td>
-                <td className="text-muted">{m.lastActiveAt ? timeAgo(m.lastActiveAt) : "—"}</td>
-                <td><Pill color="green">Active</Pill></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Panel>
+      <div className="mb-[18px]">
+        <StaffTable staff={staff} canManage={canManage} />
+      </div>
 
       <Panel>
         <PanelHead title="Recent Activity Log" />
