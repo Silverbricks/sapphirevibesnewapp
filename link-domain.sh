@@ -31,12 +31,16 @@ certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m "
 
 echo "==> Updating app URL"
 cd "$APP_DIR"
-if grep -q '^NEXTAUTH_URL=' .env; then
-  sed -i "s|^NEXTAUTH_URL=.*|NEXTAUTH_URL=\"https://${DOMAIN}\"|" .env
-else
-  echo "NEXTAUTH_URL=\"https://${DOMAIN}\"" >> .env
-fi
-pm2 restart sapphire
+set_env() {
+  if grep -q "^$1=" .env; then
+    sed -i "s|^$1=.*|$1=\"$2\"|" .env
+  else
+    echo "$1=\"$2\"" >> .env
+  fi
+}
+set_env NEXTAUTH_URL "https://${DOMAIN}"
+set_env AUTH_URL "https://${DOMAIN}"
+pm2 restart sapphire --update-env
 
 echo ""
 echo "============================================================"
