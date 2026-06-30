@@ -1,6 +1,6 @@
 import { getNewArrivals, getBestSellers } from "@/lib/data/products";
 import { getShopTheLook } from "@/lib/data/catalog";
-import { getFeaturedTestimonials, getHeroSlides } from "@/lib/data/content";
+import { getFeaturedTestimonials, getHeroSlides, getVisibleBlockKeys } from "@/lib/data/content";
 import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { CompleteTheLook } from "@/components/storefront/CompleteTheLook";
 import { Newsletter } from "@/components/storefront/Newsletter";
@@ -22,52 +22,63 @@ const img = (id: string, w = 1100) => `https://images.unsplash.com/photo-${id}?w
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [newArrivals, bestSellers, testimonials, look, heroSlides] = await Promise.all([
+  const [newArrivals, bestSellers, testimonials, look, heroSlides, visibleKeys] = await Promise.all([
     getNewArrivals(4),
     getBestSellers(4),
     getFeaturedTestimonials(3),
     getShopTheLook(),
     getHeroSlides(),
+    getVisibleBlockKeys(),
   ]);
+  // homepage sections toggle on/off from the CMS (default shown if no block exists)
+  const show = (key: string) => visibleKeys.size === 0 || visibleKeys.has(key);
 
   return (
     <>
-      {heroSlides.length > 0 ? <HeroSlider slides={heroSlides} /> : <Hero />}
+      {show("hero") && (heroSlides.length > 0 ? <HeroSlider slides={heroSlides} /> : <Hero />)}
       <Marquee />
 
-      <section className="py-24">
-        <div className="wrap">
-          <SectionHead eyebrow="Curated Spaces" title="Shop by Room" href="/rooms" cta="View all rooms" />
-          <ShopByRoom />
-        </div>
-      </section>
+      {show("rooms") && (
+        <section className="py-24">
+          <div className="wrap">
+            <SectionHead eyebrow="Curated Spaces" title="Shop by Room" href="/rooms" cta="View all rooms" />
+            <ShopByRoom />
+          </div>
+        </section>
+      )}
 
-      <section className="pb-24">
-        <div className="wrap">
-          <SectionHead eyebrow="Fresh In" title="New Arrivals" href="/new-arrivals" cta="Shop all new" />
-          <ProductGrid products={newArrivals} />
-        </div>
-      </section>
+      {show("new") && (
+        <section className="pb-24">
+          <div className="wrap">
+            <SectionHead eyebrow="Fresh In" title="New Arrivals" href="/new-arrivals" cta="Shop all new" />
+            <ProductGrid products={newArrivals} />
+          </div>
+        </section>
+      )}
 
-      <section className="pb-24">
-        <div className="wrap">
-          <CollectionBand
-            eyebrow="Signature Series"
-            title="Sculptural Lighting"
-            desc="Hand-finished chandeliers and pendants designed to be the centrepiece of any room. Brass, alabaster, and hand-blown glass."
-            image={img("1513506003901-1e6a229e2d15")}
-            href="/collections/sculptural-lighting"
-            cta="Discover Lighting"
-          />
-        </div>
-      </section>
+      {show("collections") && (
+        <section className="pb-24">
+          <div className="wrap">
+            <CollectionBand
+              eyebrow="Signature Series"
+              title="Sculptural Lighting"
+              desc="Hand-finished chandeliers and pendants designed to be the centrepiece of any room. Brass, alabaster, and hand-blown glass."
+              image={img("1513506003901-1e6a229e2d15")}
+              href="/collections/sculptural-lighting"
+              cta="Discover Lighting"
+            />
+          </div>
+        </section>
+      )}
 
-      <section className="pb-24">
-        <div className="wrap">
-          <SectionHead eyebrow="Most Loved" title="Best Sellers" href="/sale" cta="Shop best sellers" />
-          <ProductGrid products={bestSellers} />
-        </div>
-      </section>
+      {show("best") && (
+        <section className="pb-24">
+          <div className="wrap">
+            <SectionHead eyebrow="Most Loved" title="Best Sellers" href="/sale" cta="Shop best sellers" />
+            <ProductGrid products={bestSellers} />
+          </div>
+        </section>
+      )}
 
       {look && (
         <section className="pb-24">
@@ -103,20 +114,24 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="pb-24">
-        <div className="wrap">
-          <SectionHead eyebrow="In Their Words" title="Loved by Thousands" />
-          <Reviews testimonials={testimonials} />
-        </div>
-      </section>
+      {show("reviews") && (
+        <section className="pb-24">
+          <div className="wrap">
+            <SectionHead eyebrow="In Their Words" title="Loved by Thousands" />
+            <Reviews testimonials={testimonials} />
+          </div>
+        </section>
+      )}
 
       <RecentlyViewed />
 
-      <section className="pb-24">
-        <div className="wrap">
-          <Newsletter />
-        </div>
-      </section>
+      {show("newsletter") && (
+        <section className="pb-24">
+          <div className="wrap">
+            <Newsletter />
+          </div>
+        </section>
+      )}
     </>
   );
 }

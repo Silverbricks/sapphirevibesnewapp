@@ -189,6 +189,24 @@ export async function removeHeroSlide(index: number) {
   revalidatePath("/");
 }
 
+export async function saveAnnouncement(formData: FormData) {
+  const staff = await requireStaff();
+  const value = {
+    text: (formData.get("text") as string)?.trim() || "",
+    ctaHref: (formData.get("ctaHref") as string)?.trim() || null,
+    enabled: formData.get("enabled") === "on",
+  };
+  await db.setting.upsert({
+    where: { key: "announcement" },
+    create: { key: "announcement", value },
+    update: { value },
+  });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Updated announcement bar", targetType: "Setting" } });
+  revalidatePath("/admin/homepage");
+  revalidatePath("/", "layout");
+  return { ok: true as const };
+}
+
 export async function toggleHomepageBlock(id: string, isVisible: boolean) {
   await requireStaff();
   await db.homepageBlock.update({ where: { id }, data: { isVisible } });

@@ -8,10 +8,15 @@ import { SITE, STOREFRONT_NAV } from "@/lib/constants";
 import { Logo } from "./Logo";
 import { useStore } from "./store-context";
 
-export function AnnouncementBar() {
+export function AnnouncementBar({ text, ctaHref }: { text?: string; ctaHref?: string | null }) {
+  const content = text || SITE.announcement;
   return (
     <div className="border-b border-line-gold bg-gradient-to-r from-ink via-[#1a1209] to-ink py-2.5 text-center text-[12px] uppercase tracking-[0.18em] text-gold-soft">
-      {SITE.announcement}
+      {ctaHref ? (
+        <Link href={ctaHref} className="transition-colors hover:text-gold">{content}</Link>
+      ) : (
+        content
+      )}
     </div>
   );
 }
