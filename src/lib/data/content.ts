@@ -28,6 +28,25 @@ export async function getAnnouncement(): Promise<AnnouncementConfig | null> {
   }
 }
 
+export interface PromoBannerConfig {
+  image?: string | null;
+  eyebrow?: string | null;
+  heading?: string;
+  desc?: string | null;
+  ctaLabel?: string | null;
+  ctaHref?: string | null;
+}
+
+/** Promotional banner content, stored in the `promo` homepage block's config JSON. */
+export async function getPromoBanner(): Promise<PromoBannerConfig | null> {
+  try {
+    const block = await db.homepageBlock.findUnique({ where: { key: "promo" } });
+    return (block?.config as PromoBannerConfig | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Set of homepage-block keys currently toggled visible (drives storefront section show/hide). */
 export async function getVisibleBlockKeys(): Promise<Set<string>> {
   try {

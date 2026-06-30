@@ -189,6 +189,30 @@ export async function removeHeroSlide(index: number) {
   revalidatePath("/");
 }
 
+export async function savePromoBanner(formData: FormData) {
+  const staff = await requireStaff();
+  const block = await db.homepageBlock.findUnique({ where: { key: "promo" } });
+  const config = (block?.config as Record<string, unknown> | null) ?? {};
+  const uploaded = await saveUploadedImage(formData.get("imageFile") as File | null);
+  const image = uploaded || (formData.get("imageUrl") as string)?.trim() || (config.image as string) || null;
+  const banner = {
+    image,
+    eyebrow: (formData.get("eyebrow") as string)?.trim() || null,
+    heading: (formData.get("heading") as string)?.trim() || "",
+    desc: (formData.get("desc") as string)?.trim() || null,
+    ctaLabel: (formData.get("ctaLabel") as string)?.trim() || null,
+    ctaHref: (formData.get("ctaHref") as string)?.trim() || null,
+  };
+  await db.homepageBlock.update({
+    where: { key: "promo" },
+    data: { config: { ...config, ...banner } as Prisma.InputJsonValue },
+  });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Updated promo banner", targetType: "HomepageBlock" } });
+  revalidatePath("/admin/homepage/promo");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
 export async function saveAnnouncement(formData: FormData) {
   const staff = await requireStaff();
   const value = {

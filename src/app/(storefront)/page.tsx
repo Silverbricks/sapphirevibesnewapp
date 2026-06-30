@@ -1,11 +1,12 @@
 import { getNewArrivals, getBestSellers } from "@/lib/data/products";
 import { getShopTheLook } from "@/lib/data/catalog";
-import { getFeaturedTestimonials, getHeroSlides, getVisibleBlockKeys } from "@/lib/data/content";
+import { getFeaturedTestimonials, getHeroSlides, getVisibleBlockKeys, getPromoBanner } from "@/lib/data/content";
 import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { CompleteTheLook } from "@/components/storefront/CompleteTheLook";
 import { Newsletter } from "@/components/storefront/Newsletter";
 import { RecentlyViewed } from "@/components/storefront/RecentlyViewed";
 import { HeroSlider } from "@/components/storefront/HeroSlider";
+import { PromoBanner } from "@/components/storefront/PromoBanner";
 import {
   Hero,
   Marquee,
@@ -22,12 +23,13 @@ const img = (id: string, w = 1100) => `https://images.unsplash.com/photo-${id}?w
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [newArrivals, bestSellers, testimonials, look, heroSlides, visibleKeys] = await Promise.all([
+  const [newArrivals, bestSellers, testimonials, look, heroSlides, promoBanner, visibleKeys] = await Promise.all([
     getNewArrivals(4),
     getBestSellers(4),
     getFeaturedTestimonials(3),
     getShopTheLook(),
     getHeroSlides(),
+    getPromoBanner(),
     getVisibleBlockKeys(),
   ]);
   // homepage sections toggle on/off from the CMS (default shown if no block exists)
@@ -37,6 +39,14 @@ export default async function HomePage() {
     <>
       {show("hero") && (heroSlides.length > 0 ? <HeroSlider slides={heroSlides} /> : <Hero />)}
       <Marquee />
+
+      {show("promo") && promoBanner && (
+        <section className="pt-24">
+          <div className="wrap">
+            <PromoBanner banner={promoBanner} />
+          </div>
+        </section>
+      )}
 
       {show("rooms") && (
         <section className="py-24">

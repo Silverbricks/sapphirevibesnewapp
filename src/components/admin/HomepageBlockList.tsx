@@ -18,6 +18,7 @@ interface Block {
 // blocks that have a dedicated editor
 const EDITORS: Record<string, string> = {
   hero: "/admin/homepage/hero",
+  promo: "/admin/homepage/promo",
 };
 
 export function HomepageBlockList({ blocks }: { blocks: Block[] }) {
