@@ -1,6 +1,8 @@
 import { getAdminCollections } from "@/lib/data/admin";
-import { Pill, buttonClasses } from "@/components/ui";
+import { Pill } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
+import { CreateButton } from "@/components/admin/CreateButton";
+import { createCollection } from "@/actions/admin";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Collections · Admin" };
@@ -12,7 +14,19 @@ export default async function CollectionsPage() {
       <PageHead
         title="Collections"
         subtitle="Curate themed edits — manual or rule-based automatic collections."
-        actions={<span className={buttonClasses("gold", "md")}>+ New Collection</span>}
+        actions={
+          <CreateButton
+            label="+ New Collection"
+            title="New Collection"
+            action={createCollection}
+            fields={[
+              { name: "name", label: "Name", required: true, placeholder: "Spring 2026" },
+              { name: "type", label: "Type", type: "select", options: [{ value: "MANUAL", label: "Manual" }, { value: "AUTO", label: "Automatic" }] },
+              { name: "isFeatured", label: "Featured on storefront", type: "checkbox" },
+              { name: "description", label: "Description", type: "textarea" },
+            ]}
+          />
+        }
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {collections.map((c) => (

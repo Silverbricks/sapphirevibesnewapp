@@ -13,6 +13,8 @@ import type {
   ProductStatus,
   OrderStatus,
   ReviewStatus,
+  CouponType,
+  CollectionType,
 } from "@prisma/client";
 
 function toCents(v: FormDataEntryValue | null): number {
@@ -86,6 +88,59 @@ export async function deleteProduct(id: string) {
   await db.auditLog.create({ data: { actorName: staff.name, action: "Deleted product", targetType: "Product", targetId: id } });
   revalidatePath("/admin/products");
   revalidatePath("/admin/inventory");
+}
+
+export async function createCategory(formData: FormData) {
+  const staff = await requireStaff();
+  const name = (formData.get("name") as string)?.trim();
+  if (!name) return;
+  await db.category.create({
+    data: {
+      name,
+      slug: `${slugify(name)}-${Math.floor(100 + Math.random() * 900)}`,
+      parentId: (formData.get("parentId") as string) || null,
+      description: (formData.get("description") as string) || null,
+    },
+  });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Created category", targetType: "Category", meta: { name } } });
+  revalidatePath("/admin/categories");
+}
+
+export async function createCollection(formData: FormData) {
+  const staff = await requireStaff();
+  const name = (formData.get("name") as string)?.trim();
+  if (!name) return;
+  await db.collection.create({
+    data: {
+      name,
+      slug: `${slugify(name)}-${Math.floor(100 + Math.random() * 900)}`,
+      type: ((formData.get("type") as string) || "MANUAL") as CollectionType,
+      isFeatured: formData.get("isFeatured") === "on",
+      description: (formData.get("description") as string) || null,
+    },
+  });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Created collection", targetType: "Collection", meta: { name } } });
+  revalidatePath("/admin/collections");
+  revalidatePath("/collections");
+}
+
+export async function createCoupon(formData: FormData) {
+  const staff = await requireStaff();
+  const code = (formData.get("code") as string)?.trim().toUpperCase();
+  const type = (formData.get("type") as string) as CouponType;
+  if (!code || !type) return;
+  const value = parseFloat((formData.get("value") as string) || "0") || 0;
+  await db.coupon.create({
+    data: {
+      code,
+      type,
+      percent: type === "PERCENT" ? Math.round(value) : null,
+      valueCents: type === "FIXED" ? Math.round(value * 100) : null,
+      description: (formData.get("description") as string) || null,
+    },
+  });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Created coupon", targetType: "Coupon", meta: { code } } });
+  revalidatePath("/growth/coupons");
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {

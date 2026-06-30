@@ -1,18 +1,35 @@
 import { getAdminCategories } from "@/lib/data/admin";
-import { buttonClasses } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
+import { CreateButton } from "@/components/admin/CreateButton";
+import { createCategory } from "@/actions/admin";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Categories · Admin" };
 
 export default async function CategoriesPage() {
   const categories = await getAdminCategories();
+  const parentOptions = [
+    { value: "", label: "None (top level)" },
+    ...categories.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
   return (
     <>
       <PageHead
         title="Categories"
         subtitle="Organise products across rooms, collections and styles."
-        actions={<span className={buttonClasses("gold", "md")}>Add Category</span>}
+        actions={
+          <CreateButton
+            label="Add Category"
+            title="New Category"
+            action={createCategory}
+            fields={[
+              { name: "name", label: "Name", required: true, placeholder: "Outdoor Living" },
+              { name: "parentId", label: "Parent Category", type: "select", options: parentOptions },
+              { name: "description", label: "Description", type: "textarea", placeholder: "Short description" },
+            ]}
+          />
+        }
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((c) => (

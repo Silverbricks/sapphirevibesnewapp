@@ -1,6 +1,8 @@
 import { getCouponsData } from "@/lib/data/marketing";
-import { StatCard, buttonClasses } from "@/components/ui";
+import { StatCard } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
+import { CreateButton } from "@/components/admin/CreateButton";
+import { createCoupon } from "@/actions/admin";
 import { formatNumber, formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,19 @@ export default async function CouponsPage() {
       <PageHead
         title="Coupons & Discounts"
         subtitle="Percentage, fixed, free-shipping and targeted coupon codes."
-        actions={<span className={buttonClasses("gold", "md")}>+ Create Coupon</span>}
+        actions={
+          <CreateButton
+            label="+ Create Coupon"
+            title="New Coupon"
+            action={createCoupon}
+            fields={[
+              { name: "code", label: "Code", required: true, placeholder: "SPRING20" },
+              { name: "type", label: "Type", type: "select", options: [{ value: "PERCENT", label: "Percentage off" }, { value: "FIXED", label: "Fixed $ off" }, { value: "FREE_SHIPPING", label: "Free shipping" }] },
+              { name: "value", label: "Value (% or $)", type: "number", placeholder: "20" },
+              { name: "description", label: "Description", type: "text", placeholder: "20% off sitewide" },
+            ]}
+          />
+        }
       />
       <div className="mb-[26px] grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Active Coupons" value={activeCount} />
