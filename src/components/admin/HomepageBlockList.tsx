@@ -1,17 +1,24 @@
 "use client";
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { GripVertical, ChevronUp, ChevronDown, Pencil } from "lucide-react";
 import { Toggle } from "@/components/ui";
 import { toggleHomepageBlock, reorderHomepageBlock } from "@/actions/admin";
 
 interface Block {
   id: string;
+  key: string;
   name: string;
   blurb: string | null;
   isVisible: boolean;
 }
+
+// blocks that have a dedicated editor
+const EDITORS: Record<string, string> = {
+  hero: "/admin/homepage/hero",
+};
 
 export function HomepageBlockList({ blocks }: { blocks: Block[] }) {
   const [pending, startTransition] = useTransition();
@@ -32,6 +39,14 @@ export function HomepageBlockList({ blocks }: { blocks: Block[] }) {
             <b className="text-[15px] font-normal">{b.name}</b>
             {b.blurb && <small className="text-xs text-muted">{b.blurb}</small>}
           </div>
+          {EDITORS[b.key] && (
+            <Link
+              href={EDITORS[b.key]}
+              className="flex items-center gap-1 rounded-lg border border-line-gold px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </Link>
+          )}
           <div className="flex items-center gap-1">
             <button disabled={pending || i === 0} onClick={() => run(() => reorderHomepageBlock(b.id, "up"))} className="text-muted hover:text-gold disabled:opacity-30">
               <ChevronUp className="h-4 w-4" />

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireStaff, requireRole } from "@/lib/auth-helpers";
 import { slugify } from "@/lib/utils";
 import { saveUploadedImage } from "@/lib/upload";
-import { Role } from "@prisma/client";
+import { Role, Prisma } from "@prisma/client";
 import type {
   ProductBadge,
   ProductStatus,
@@ -153,6 +153,40 @@ export async function updateOrderStatus(orderId: string, status: string) {
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${order.number}`);
   return { ok: true as const };
+}
+
+export async function addHeroSlide(formData: FormData) {
+  const staff = await requireStaff();
+  const uploaded = await saveUploadedImage(formData.get("imageFile") as File | null);
+  const image = uploaded || (formData.get("imageUrl") as string)?.trim();
+  if (!image) return;
+  const slide = {
+    image,
+    eyebrow: (formData.get("eyebrow") as string)?.trim() || null,
+    title: (formData.get("title") as string)?.trim() || "",
+    subtitle: (formData.get("subtitle") as string)?.trim() || null,
+    ctaLabel: (formData.get("ctaLabel") as string)?.trim() || null,
+    ctaHref: (formData.get("ctaHref") as string)?.trim() || null,
+  };
+  const block = await db.homepageBlock.findUnique({ where: { key: "hero" } });
+  const config = (block?.config as { slides?: unknown[] } | null) ?? {};
+  const slides = Array.isArray(config.slides) ? config.slides : [];
+  slides.push(slide);
+  await db.homepageBlock.update({ where: { key: "hero" }, data: { config: { ...config, slides } as Prisma.InputJsonValue } });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Added hero slide", targetType: "HomepageBlock" } });
+  revalidatePath("/admin/homepage/hero");
+  revalidatePath("/");
+}
+
+export async function removeHeroSlide(index: number) {
+  await requireStaff();
+  const block = await db.homepageBlock.findUnique({ where: { key: "hero" } });
+  const config = (block?.config as { slides?: unknown[] } | null) ?? {};
+  const slides = Array.isArray(config.slides) ? config.slides : [];
+  if (index >= 0 && index < slides.length) slides.splice(index, 1);
+  await db.homepageBlock.update({ where: { key: "hero" }, data: { config: { ...config, slides } as Prisma.InputJsonValue } });
+  revalidatePath("/admin/homepage/hero");
+  revalidatePath("/");
 }
 
 export async function toggleHomepageBlock(id: string, isVisible: boolean) {

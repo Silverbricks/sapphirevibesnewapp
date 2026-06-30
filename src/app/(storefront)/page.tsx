@@ -1,10 +1,11 @@
 import { getNewArrivals, getBestSellers } from "@/lib/data/products";
 import { getShopTheLook } from "@/lib/data/catalog";
-import { getFeaturedTestimonials } from "@/lib/data/content";
+import { getFeaturedTestimonials, getHeroSlides } from "@/lib/data/content";
 import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { CompleteTheLook } from "@/components/storefront/CompleteTheLook";
 import { Newsletter } from "@/components/storefront/Newsletter";
 import { RecentlyViewed } from "@/components/storefront/RecentlyViewed";
+import { HeroSlider } from "@/components/storefront/HeroSlider";
 import {
   Hero,
   Marquee,
@@ -21,16 +22,17 @@ const img = (id: string, w = 1100) => `https://images.unsplash.com/photo-${id}?w
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [newArrivals, bestSellers, testimonials, look] = await Promise.all([
+  const [newArrivals, bestSellers, testimonials, look, heroSlides] = await Promise.all([
     getNewArrivals(4),
     getBestSellers(4),
     getFeaturedTestimonials(3),
     getShopTheLook(),
+    getHeroSlides(),
   ]);
 
   return (
     <>
-      <Hero />
+      {heroSlides.length > 0 ? <HeroSlider slides={heroSlides} /> : <Hero />}
       <Marquee />
 
       <section className="py-24">
