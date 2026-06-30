@@ -10,6 +10,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import type { ProductCardData } from "@/lib/data/products";
+import { syncWishlist } from "@/actions/storefront";
 
 const CART_KEY = "sv_cart_v1";
 const WISH_KEY = "sv_wishlist_v1";
@@ -127,16 +128,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => setCart([]), []);
 
-  const toggleWishlist = useCallback((id: string, name?: string) => {
-    setWishlist((prev) => {
-      if (prev.includes(id)) {
-        toast(`${name ?? "Item"} removed from wishlist`);
-        return prev.filter((x) => x !== id);
-      }
-      toast.success(`${name ?? "Item"} saved to wishlist`);
-      return [...prev, id];
-    });
-  }, []);
+  const toggleWishlist = useCallback(
+    (id: string, name?: string) => {
+      const has = wishlist.includes(id);
+      setWishlist(has ? wishlist.filter((x) => x !== id) : [...wishlist, id]);
+      if (has) toast(`${name ?? "Item"} removed from wishlist`);
+      else toast.success(`${name ?? "Item"} saved to wishlist`);
+      // persist for logged-in users (no-op for guests)
+      void syncWishlist(id, !has).catch(() => {});
+    },
+    [wishlist],
+  );
 
   const toggleCompare = useCallback((card: ProductCardData) => {
     setCompareCards((prev) => {

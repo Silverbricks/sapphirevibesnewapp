@@ -37,8 +37,8 @@ export const FOOTER_COLUMNS = [
     links: [
       { label: "New Arrivals", href: "/new-arrivals" },
       { label: "Lighting", href: "/lighting" },
-      { label: "Furniture", href: "/collections/furniture" },
-      { label: "Home Décor", href: "/collections/home-decor" },
+      { label: "Furniture", href: "/shop/furniture" },
+      { label: "Home Décor", href: "/shop/home-decor" },
       { label: "Gifts", href: "/gifts" },
       { label: "Sale", href: "/sale" },
     ],

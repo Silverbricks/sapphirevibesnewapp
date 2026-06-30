@@ -1,7 +1,9 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { auth } from "../../auth";
 import { getProductsByIds, type ProductCardData } from "@/lib/data/products";
 
 const emailSchema = z.string().email();
@@ -39,6 +41,24 @@ export async function subscribeNewsletter(email: string) {
 /** Resolve recently-viewed product ids (from client localStorage) into card data. */
 export async function getRecentlyViewed(ids: string[]): Promise<ProductCardData[]> {
   return getProductsByIds(ids.slice(0, 8));
+}
+
+/** Persist a wishlist toggle to the DB for logged-in users (no-op for guests). */
+export async function syncWishlist(productId: string, add: boolean) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { ok: false, loggedIn: false };
+  if (add) {
+    await db.wishlistItem.upsert({
+      where: { userId_productId: { userId, productId } },
+      create: { userId, productId },
+      update: {},
+    });
+  } else {
+    await db.wishlistItem.deleteMany({ where: { userId, productId } });
+  }
+  revalidatePath("/account/wishlist");
+  return { ok: true, loggedIn: true };
 }
 
 export interface TrackedOrder {

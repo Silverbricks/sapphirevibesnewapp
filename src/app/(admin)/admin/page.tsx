@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
         actions={
           <>
             <Link href="/admin/reports" className={buttonClasses("outline", "md")}>Export</Link>
-            <Link href="/admin/products" className={buttonClasses("gold", "md")}><Plus className="h-4 w-4" /> Add Product</Link>
+            <Link href="/admin/products/new" className={buttonClasses("gold", "md")}><Plus className="h-4 w-4" /> Add Product</Link>
           </>
         }
       />
