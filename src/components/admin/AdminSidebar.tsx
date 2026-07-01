@@ -77,6 +77,7 @@ export function AdminSidebar({
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-[248px] flex-col overflow-y-auto border-r border-line bg-ink max-lg:w-[64px]">
       <div className="border-b border-line px-[22px] py-6">
         <Logo size={22} className="max-lg:hidden" />
+        <div className="mt-1.5 text-[10px] uppercase tracking-[0.24em] text-gold max-lg:hidden">Super Admin</div>
         <div className="hidden max-lg:block">
           <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
             <path d="M12 2l3 7 7 1-5 5 1.5 7L12 18 5.5 22 7 13 2 8l7-1z" stroke="#C8A45C" strokeWidth="1.3" />

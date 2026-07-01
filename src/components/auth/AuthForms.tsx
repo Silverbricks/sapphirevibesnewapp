@@ -31,12 +31,23 @@ function Divider() {
   );
 }
 
-export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
+export function LoginForm({
+  callbackUrl,
+  title = "Welcome back",
+  subtitle = "Sign in to your Sapphire Vibes account.",
+  staff = false,
+}: {
+  callbackUrl: string;
+  title?: string;
+  subtitle?: string;
+  staff?: boolean;
+}) {
   const [state, action, pending] = useActionState<AuthState, FormData>(loginAction, undefined);
   return (
     <div className="rounded-panel border border-line bg-card p-8">
-      <h1 className="mb-1 font-serif text-3xl">Welcome back</h1>
-      <p className="mb-6 text-sm text-muted">Sign in to your Sapphire Vibes account.</p>
+      {staff && <div className="mb-2 text-[11px] uppercase tracking-[0.28em] text-gold">Sapphire Vibes</div>}
+      <h1 className="mb-1 font-serif text-3xl">{title}</h1>
+      <p className="mb-6 text-sm text-muted">{subtitle}</p>
       <form action={action}>
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <FormField label="Email">
@@ -50,15 +61,23 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           Sign In
         </Button>
       </form>
-      <Divider />
-      <GoogleButton />
-      <p className="mt-6 text-center text-sm text-muted">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-gold">Create one</Link>
-      </p>
-      <p className="mt-3 text-center text-[11px] text-muted">
-        Demo: amelia@email.com / password123 · admin@sapphirevibes.au / password123
-      </p>
+      {staff ? (
+        <p className="mt-6 text-center text-[11px] uppercase tracking-[0.14em] text-muted">
+          Authorised staff only
+        </p>
+      ) : (
+        <>
+          <Divider />
+          <GoogleButton />
+          <p className="mt-6 text-center text-sm text-muted">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="text-gold">Create one</Link>
+          </p>
+          <p className="mt-3 text-center text-[11px] text-muted">
+            Demo: amelia@email.com / password123 · admin@sapphirevibes.au / password123
+          </p>
+        </>
+      )}
     </div>
   );
 }

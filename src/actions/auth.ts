@@ -79,5 +79,9 @@ export async function googleSignIn() {
 }
 
 export async function logoutAction() {
-  await signOut({ redirectTo: "/" });
+  await signOut({ redirectTo: "/login" });
+}
+
+export async function logoutStaffAction() {
+  await signOut({ redirectTo: "/superadmin" });
 }

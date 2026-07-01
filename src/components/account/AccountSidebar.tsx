@@ -63,7 +63,7 @@ export function AccountSidebar({
           href="/admin"
           className="mb-3 flex items-center justify-center gap-2 rounded-lg border border-line-gold bg-gold/10 py-2.5 text-xs uppercase tracking-[0.12em] text-gold transition-colors hover:bg-gold hover:text-ink"
         >
-          <Shield className="h-4 w-4" /> Admin Console →
+          <Shield className="h-4 w-4" /> Superadmin →
         </Link>
       )}
 

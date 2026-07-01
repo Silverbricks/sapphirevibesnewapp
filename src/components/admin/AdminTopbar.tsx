@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { AdminSearch } from "./AdminSearch";
 import { NotificationsBell } from "./NotificationsBell";
 import { getAdminNotifications } from "@/lib/data/admin";
+import { logoutStaffAction } from "@/actions/auth";
 
 export async function AdminTopbar({ name }: { name: string }) {
   const notifications = await getAdminNotifications();
@@ -15,6 +17,12 @@ export async function AdminTopbar({ name }: { name: string }) {
         </Link>
         <NotificationsBell items={notifications} />
         <Avatar name={name} size={36} />
+        <form action={logoutStaffAction}>
+          <button className="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-gold" title="Sign out">
+            <LogOut className="h-4 w-4" strokeWidth={1.5} />
+            <span className="max-sm:hidden">Sign Out</span>
+          </button>
+        </form>
       </div>
     </div>
   );
