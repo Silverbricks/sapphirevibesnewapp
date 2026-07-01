@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Panel, Input, Textarea, Select, FormField, Toggle, buttonClasses } from "@/components/ui";
+import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
+import { Panel, Input, Textarea, Select, FormField, Toggle, Button, buttonClasses } from "@/components/ui";
 import { RichTextEditor } from "./RichTextEditor";
 import { SubmitButton } from "./SubmitButton";
 import { saveBlogPost } from "@/actions/content";
+import { generateBlogDraft } from "@/actions/ai";
 import type { BlogMeta } from "@/lib/cms";
 
 interface PostInit {
@@ -27,6 +30,26 @@ export function BlogEditor({ post }: { post: PostInit }) {
   const [pinned, setPinned] = useState(!!meta.pinned);
   const [allowComments, setAllowComments] = useState(meta.allowComments !== false);
 
+  const [title, setTitle] = useState(post.title ?? "");
+  const [excerpt, setExcerpt] = useState(post.excerpt ?? "");
+  const [body, setBody] = useState(post.body ?? "");
+  const [bodyKey, setBodyKey] = useState(0);
+  const [aiPending, startAi] = useTransition();
+
+  function runAi() {
+    if (!title.trim()) { toast.error("Enter a title first"); return; }
+    startAi(async () => {
+      const res = await generateBlogDraft(title);
+      if ("error" in res && res.error) { toast.error(res.error); return; }
+      if (res.ok) {
+        setExcerpt(res.excerpt || excerpt);
+        setBody(res.html);
+        setBodyKey((k) => k + 1); // remount editor with the new content
+        toast.success("Draft generated");
+      }
+    });
+  }
+
   return (
     <form action={saveBlogPost} className="grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_320px]">
       {post.id && <input type="hidden" name="id" value={post.id} />}
@@ -34,16 +57,22 @@ export function BlogEditor({ post }: { post: PostInit }) {
       {/* main column */}
       <div className="space-y-[18px]">
         <Panel>
-          <FormField label="Title"><Input name="title" defaultValue={post.title ?? ""} placeholder="The Art of Layering Light" required /></FormField>
-          <FormField label="Excerpt (shown in listings)"><Textarea name="excerpt" defaultValue={post.excerpt ?? ""} rows={2} placeholder="A short summary of the article…" /></FormField>
+          <FormField label="Title"><Input name="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The Art of Layering Light" required /></FormField>
+          <FormField label="Excerpt (shown in listings)"><Textarea name="excerpt" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={2} placeholder="A short summary of the article…" /></FormField>
           <FormField label="Body">
-            <RichTextEditor name="body" defaultValue={post.body ?? ""} />
+            <RichTextEditor key={bodyKey} name="body" defaultValue={body} />
           </FormField>
         </Panel>
       </div>
 
       {/* sidebar */}
       <div className="space-y-[18px]">
+        <Panel>
+          <h3 className="mb-2 flex items-center gap-2 font-serif text-lg"><Sparkles className="h-4 w-4 text-gold" /> AI Assistant</h3>
+          <p className="mb-3 text-xs text-muted">Generate a full first draft and excerpt from your title. Review and edit before publishing.</p>
+          <Button type="button" variant="dark" loading={aiPending} onClick={runAi}>Generate Draft</Button>
+        </Panel>
+
         <Panel>
           <h3 className="mb-4 font-serif text-lg">Publish</h3>
           <FormField label="Status">

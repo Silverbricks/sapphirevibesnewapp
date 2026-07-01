@@ -6,32 +6,51 @@ import { authConfig } from "./auth.config";
 export const { auth: middleware } = NextAuth(authConfig);
 
 type RedirectRow = { from: string; to: string; permanent: boolean };
+type SystemConfig = { map: Map<string, RedirectRow>; maintenance: boolean };
 
-// Module-level cache of admin-managed redirects (refreshed at most once per TTL).
-let cache: { at: number; map: Map<string, RedirectRow> } | null = null;
+// Module-level cache of admin-managed system config (refreshed at most once per TTL).
+let cache: { at: number; config: SystemConfig } | null = null;
 const TTL = 60_000;
 
-async function getRedirectMap(origin: string): Promise<Map<string, RedirectRow>> {
-  if (cache && Date.now() - cache.at < TTL) return cache.map;
+async function getSystemConfig(origin: string): Promise<SystemConfig> {
+  if (cache && Date.now() - cache.at < TTL) return cache.config;
   try {
     const res = await fetch(`${origin}/api/redirects`, { headers: { "x-mw": "1" } });
-    const rows = (await res.json()) as RedirectRow[];
-    const map = new Map(rows.map((r) => [r.from, r]));
-    cache = { at: Date.now(), map };
-    return map;
+    const data = (await res.json()) as { redirects: RedirectRow[]; maintenance: boolean };
+    const config: SystemConfig = {
+      map: new Map(data.redirects.map((r) => [r.from, r])),
+      maintenance: !!data.maintenance,
+    };
+    cache = { at: Date.now(), config };
+    return config;
   } catch {
-    return cache?.map ?? new Map();
+    return cache?.config ?? { map: new Map(), maintenance: false };
   }
 }
 
 export default middleware(async (req) => {
   const { pathname, origin } = req.nextUrl;
-  // Apply admin-managed redirects on public paths (never /api or internal assets).
+
+  // Admin-managed system config applies to public paths only (never /api or assets).
   if (!pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
-    const map = await getRedirectMap(origin);
+    const { map, maintenance } = await getSystemConfig(origin);
+
     const hit = map.get(pathname);
     if (hit) {
       return NextResponse.redirect(new URL(hit.to, origin), hit.permanent ? 308 : 307);
+    }
+
+    // Maintenance mode: hide the storefront but keep staff consoles + auth reachable.
+    if (
+      maintenance &&
+      pathname !== "/maintenance" &&
+      !pathname.startsWith("/admin") &&
+      !pathname.startsWith("/growth") &&
+      !pathname.startsWith("/account") &&
+      !pathname.startsWith("/login") &&
+      !pathname.startsWith("/uploads")
+    ) {
+      return NextResponse.rewrite(new URL("/maintenance", origin));
     }
   }
   // Otherwise fall through — route protection is handled by authConfig.authorized.

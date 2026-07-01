@@ -2,11 +2,13 @@ import Image from "next/image";
 import { requireModule } from "@/lib/auth-helpers";
 import { getSettingsData } from "@/lib/data/admin";
 import { getSiteSettings } from "@/lib/data/settings";
-import { Panel, Input, Textarea, FormField } from "@/components/ui";
+import { Panel, Input, Textarea, FormField, buttonClasses } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
 import { SettingForm } from "@/components/admin/SettingForm";
 import { ShippingSettingsForm } from "@/components/admin/ShippingSettingsForm";
 import { IntegrationsEditor } from "@/components/admin/IntegrationsEditor";
+import { SystemSettingsForm } from "@/components/admin/SystemSettingsForm";
+import { getSystemSettings } from "@/lib/data/settings";
 import {
   saveStoreSettings,
   saveBrandingSettings,
@@ -24,6 +26,7 @@ export default async function SettingsPage() {
   await requireModule("settings");
   const { integrations } = await getSettingsData();
   const { store, social, branding, tax, shipping } = await getSiteSettings();
+  const system = await getSystemSettings();
 
   return (
     <>
@@ -89,6 +92,15 @@ export default async function SettingsPage() {
           </SettingForm>
           <ShippingSettingsForm shipping={shipping} />
         </div>
+      </div>
+
+      <div className="mb-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_360px]">
+        <SystemSettingsForm system={system} />
+        <Panel>
+          <h3 className="mb-2 font-serif text-[21px]">Backup</h3>
+          <p className="mb-4 text-sm text-muted">Download a JSON snapshot of your catalogue and CMS content (products, pages, blog, settings, redirects). Super Admin only.</p>
+          <a href="/api/admin/backup" className={buttonClasses("outline", "md")}>Download Content Backup</a>
+        </Panel>
       </div>
 
       <Panel>

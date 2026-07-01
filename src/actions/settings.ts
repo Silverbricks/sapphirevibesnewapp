@@ -104,6 +104,17 @@ export async function saveSeoSettings(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function saveSystemSettings(formData: FormData) {
+  const staff = await requireStaff();
+  await upsertSetting("system", {
+    maintenance: formData.get("maintenance") === "on",
+    maintenanceMessage: str(formData, "maintenanceMessage") || "We’ll be back shortly.",
+  });
+  await logSetting(staff.name, "system");
+  revalidatePath("/admin/settings");
+  return { ok: true as const };
+}
+
 export async function saveIntegration(id: string, formData: FormData) {
   const staff = await requireStaff();
   const status = (str(formData, "status") || "SETUP") as "CONNECTED" | "SETUP" | "DISCONNECTED";

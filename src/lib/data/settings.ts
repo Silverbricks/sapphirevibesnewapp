@@ -59,6 +59,25 @@ const SOCIAL_DEFAULTS: SocialSettings = {
   youtube: "",
 };
 
+export interface SystemSettings {
+  maintenance: boolean;
+  maintenanceMessage: string;
+}
+
+const SYSTEM_DEFAULTS: SystemSettings = {
+  maintenance: false,
+  maintenanceMessage: "We’re making some improvements and will be back shortly.",
+};
+
+export async function getSystemSettings(): Promise<SystemSettings> {
+  try {
+    const row = await db.setting.findUnique({ where: { key: "system" } });
+    return { ...SYSTEM_DEFAULTS, ...((row?.value as Partial<SystemSettings> | null) ?? {}) };
+  } catch {
+    return SYSTEM_DEFAULTS;
+  }
+}
+
 export interface SeoSettings {
   defaultTitle: string;
   titleTemplate: string;
