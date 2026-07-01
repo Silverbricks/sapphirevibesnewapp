@@ -204,6 +204,68 @@ Until those secrets are set, the workflow simply does nothing — it won't break
 
 ---
 
+## 4b. Super Admin CMS & enterprise features (env vars + cron)
+
+The Super Admin Control Center adds several capabilities that need config on the VPS. All are
+**optional** — the app runs without them, features degrade gracefully.
+
+### New migrations
+The CMS shipped several schema changes (blog comments, redirects, media library, user
+security fields, login logs, integration config). On the VPS just run the standard step —
+`prisma migrate deploy` applies every pending migration in order:
+
+```bash
+cd /var/www/sapphire
+git pull
+npm install
+npx prisma migrate deploy     # applies all new CMS migrations
+npm run build
+pm2 restart sapphire --update-env
+```
+
+### Optional environment variables (`.env`)
+
+```
+# Canonical public URL — used by sitemap.xml, robots.txt, OG tags, redirects
+NEXT_PUBLIC_SITE_URL="https://sapphirevibes.com"
+
+# AI content assistant (blog drafts + SEO meta). Without it, the AI buttons show a
+# "not configured" message; everything else works.
+ANTHROPIC_API_KEY="sk-ant-..."
+
+# Secret guarding the scheduled-publishing cron endpoint (see below).
+CRON_SECRET="<any long random string>"
+```
+
+After editing `.env`, reload env into the running process: `pm2 restart sapphire --update-env`.
+
+### Scheduled publishing (cron)
+Blog posts with status **Scheduled** go live automatically once their publish time passes
+(the storefront already treats due posts as live). To also flip their status to *Published* in
+the admin lists, hit the cron endpoint on a schedule. Add a system crontab entry on the VPS:
+
+```bash
+crontab -e
+# every 5 minutes:
+*/5 * * * * curl -s "https://sapphirevibes.com/api/cron/publish?secret=YOUR_CRON_SECRET" >/dev/null
+```
+
+### Maintenance mode
+Toggle it in **Admin → Settings → Maintenance Mode**. When on, shoppers see the `/maintenance`
+holding page while `/admin`, `/account` and `/login` stay reachable so staff can keep working.
+
+### Content backup
+**Admin → Settings → Backup → Download Content Backup** exports a JSON snapshot of the
+catalogue + CMS (super-admin only). For a full database backup use `pg_dump` on the VPS:
+`pg_dump -U sapphire sapphire > backup-$(date +%F).sql`.
+
+### Uploaded media
+Image uploads (products, blog covers, media library, logo/favicon) are written to
+`public/uploads/` on the VPS. `git pull` never touches it, so uploads persist across deploys —
+but include that folder in your file backups.
+
+---
+
 ## 4. Letting the developer connect during local development
 
 For me to seed/verify against your VPS database **from this machine**, port 5432 would have to be
