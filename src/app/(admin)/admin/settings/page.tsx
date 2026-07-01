@@ -1,48 +1,93 @@
+import Image from "next/image";
 import { getSettingsData } from "@/lib/data/admin";
-import { Panel, Pill, Toggle, Input, FormField, buttonClasses, type PillColor } from "@/components/ui";
+import { getSiteSettings } from "@/lib/data/settings";
+import { Panel, Pill, Input, Textarea, FormField, type PillColor } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
+import { SettingForm } from "@/components/admin/SettingForm";
+import { ShippingSettingsForm } from "@/components/admin/ShippingSettingsForm";
+import {
+  saveStoreSettings,
+  saveBrandingSettings,
+  saveSocialSettings,
+  saveTaxSettings,
+} from "@/actions/settings";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings · Admin" };
 
 const INT_COLOR: Record<string, PillColor> = { CONNECTED: "green", SETUP: "amber", DISCONNECTED: "grey" };
 
+const fileInput =
+  "block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold-soft";
+
 export default async function SettingsPage() {
-  const { settings, integrations } = await getSettingsData();
-  const tax = (settings.tax ?? {}) as { gstRate?: number; display?: string; abn?: string };
+  const { integrations } = await getSettingsData();
+  const { store, social, branding, tax, shipping } = await getSiteSettings();
 
   return (
     <>
-      <PageHead
-        title="Settings"
-        subtitle="Store configuration, tax, shipping, payments and integrations."
-        actions={<span className={buttonClasses("gold", "md")}>Save All</span>}
-      />
+      <PageHead title="Settings" subtitle="Store configuration, branding, tax, shipping, social and integrations." />
 
       <div className="mb-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-2">
-        <Panel>
-          <h3 className="mb-4 font-serif text-[21px]">Tax &amp; GST</h3>
-          <FormField label="GST Rate"><Input defaultValue={`${(tax.gstRate ?? 0.1) * 100}%`} /></FormField>
-          <FormField label="Tax Display"><Input defaultValue={tax.display ?? "Inclusive of GST"} /></FormField>
-          <FormField label="Business ABN"><Input defaultValue={tax.abn ?? "00 000 000 000"} /></FormField>
-        </Panel>
-        <Panel>
-          <h3 className="mb-4 font-serif text-[21px]">Shipping Rules</h3>
-          {[
-            ["Free shipping over $250", "Standard domestic orders", true],
-            ["Express shipping", "$14.95 flat · Australia Post", true],
-            ["Click & Collect", "Melbourne showroom", false],
-            ["Local delivery", "Within 25km · $9.95", true],
-          ].map(([t, d, on]) => (
-            <div key={t as string} className="flex items-center justify-between border-b border-line py-3.5 last:border-0">
-              <div>
-                <div className="text-sm">{t}</div>
-                <div className="text-xs text-muted">{d}</div>
+        <SettingForm action={saveStoreSettings} title="Store Information">
+          <FormField label="Store Name"><Input name="name" defaultValue={store.name} /></FormField>
+          <FormField label="Tagline"><Input name="tagline" defaultValue={store.tagline} /></FormField>
+          <FormField label="Description"><Textarea name="description" defaultValue={store.description} rows={2} /></FormField>
+          <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+            <FormField label="Contact Email"><Input name="email" type="email" defaultValue={store.email} /></FormField>
+            <FormField label="Phone"><Input name="phone" defaultValue={store.phone} /></FormField>
+          </div>
+          <FormField label="Address"><Input name="address" defaultValue={store.address} /></FormField>
+          <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
+            <FormField label="Country"><Input name="country" defaultValue={store.country} /></FormField>
+            <FormField label="Currency"><Input name="currency" defaultValue={store.currency} /></FormField>
+            <FormField label="ABN"><Input name="abn" defaultValue={store.abn} /></FormField>
+          </div>
+        </SettingForm>
+
+        <SettingForm action={saveBrandingSettings} title="Branding">
+          <div className="mb-4 flex items-center gap-4">
+            {branding.logoUrl && (
+              <div className="relative h-14 w-28 overflow-hidden rounded-card border border-line bg-ink">
+                <Image src={branding.logoUrl} alt="Logo" fill sizes="112px" className="object-contain p-1" />
               </div>
-              <Toggle checked={on as boolean} />
+            )}
+            <div className="flex-1">
+              <FormField label="Logo (upload)"><input type="file" name="logoFile" accept="image/*" className={fileInput} /></FormField>
             </div>
-          ))}
-        </Panel>
+          </div>
+          <FormField label="…or logo URL"><Input name="logoUrl" defaultValue={branding.logoUrl ?? ""} placeholder="https://…" /></FormField>
+          <div className="mb-4 flex items-center gap-4">
+            {branding.faviconUrl && (
+              <div className="relative h-10 w-10 overflow-hidden rounded-card border border-line bg-ink">
+                <Image src={branding.faviconUrl} alt="Favicon" fill sizes="40px" className="object-contain p-1" />
+              </div>
+            )}
+            <div className="flex-1">
+              <FormField label="Favicon (upload)"><input type="file" name="faviconFile" accept="image/*" className={fileInput} /></FormField>
+            </div>
+          </div>
+          <FormField label="…or favicon URL"><Input name="faviconUrl" defaultValue={branding.faviconUrl ?? ""} placeholder="https://…" /></FormField>
+        </SettingForm>
+      </div>
+
+      <div className="mb-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-2">
+        <SettingForm action={saveSocialSettings} title="Social Links">
+          <FormField label="Instagram"><Input name="instagram" defaultValue={social.instagram} placeholder="https://instagram.com/…" /></FormField>
+          <FormField label="Facebook"><Input name="facebook" defaultValue={social.facebook} placeholder="https://facebook.com/…" /></FormField>
+          <FormField label="Pinterest"><Input name="pinterest" defaultValue={social.pinterest} placeholder="https://pinterest.com/…" /></FormField>
+          <FormField label="TikTok"><Input name="tiktok" defaultValue={social.tiktok} placeholder="https://tiktok.com/@…" /></FormField>
+          <FormField label="YouTube"><Input name="youtube" defaultValue={social.youtube} placeholder="https://youtube.com/@…" /></FormField>
+        </SettingForm>
+
+        <div className="space-y-[18px]">
+          <SettingForm action={saveTaxSettings} title="Tax & GST">
+            <FormField label="GST Rate (%)"><Input name="gstRate" defaultValue={String((tax.gstRate ?? 0.1) * 100)} /></FormField>
+            <FormField label="Tax Display"><Input name="display" defaultValue={tax.display} /></FormField>
+            <FormField label="Business ABN"><Input name="abn" defaultValue={tax.abn} /></FormField>
+          </SettingForm>
+          <ShippingSettingsForm shipping={shipping} />
+        </div>
       </div>
 
       <Panel>

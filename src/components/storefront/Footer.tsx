@@ -1,8 +1,21 @@
 import Link from "next/link";
+import { Instagram, Facebook, Youtube } from "lucide-react";
 import { Logo } from "./Logo";
 import { SITE, FOOTER_COLUMNS, PAYMENT_METHODS_DISPLAY } from "@/lib/constants";
+import { getSiteSettings } from "@/lib/data/settings";
 
-export function Footer() {
+export async function Footer() {
+  const { store, social } = await getSiteSettings();
+  const socials = [
+    { href: social.instagram, Icon: Instagram, label: "Instagram" },
+    { href: social.facebook, Icon: Facebook, label: "Facebook" },
+    { href: social.youtube, Icon: Youtube, label: "YouTube" },
+  ].filter((s) => s.href);
+  const textSocials = [
+    { href: social.pinterest, label: "Pinterest" },
+    { href: social.tiktok, label: "TikTok" },
+  ].filter((s) => s.href);
+
   return (
     <footer className="border-t border-line-gold bg-ink pb-8 pt-[70px]">
       <div className="wrap">
@@ -10,8 +23,22 @@ export function Footer() {
           <div>
             <Logo className="mb-4" size={26} />
             <p className="max-w-[280px] text-sm text-muted">
-              Luxury home décor, lighting and gifts — curated for spaces that tell a story.
+              {store.description}
             </p>
+            {(socials.length > 0 || textSocials.length > 0) && (
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                {socials.map(({ href, Icon, label }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="text-muted transition-colors hover:text-gold">
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                  </a>
+                ))}
+                {textSocials.map(({ href, label }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-gold">
+                    {label}
+                  </a>
+                ))}
+              </div>
+            )}
             <div className="mt-5 flex flex-wrap gap-2">
               {PAYMENT_METHODS_DISPLAY.map((p) => (
                 <span
@@ -41,8 +68,8 @@ export function Footer() {
           ))}
         </div>
         <div className="flex flex-wrap justify-between gap-2.5 border-t border-line pt-6 text-xs text-muted">
-          <span>© 2026 {SITE.name}. All rights reserved.</span>
-          <span>Designed in {SITE.country} · ABN {SITE.abn}</span>
+          <span>© 2026 {store.name || SITE.name}. All rights reserved.</span>
+          <span>Designed in {store.country || SITE.country} · ABN {store.abn || SITE.abn}</span>
         </div>
       </div>
     </footer>
