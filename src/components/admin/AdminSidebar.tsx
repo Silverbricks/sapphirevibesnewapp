@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Boxes, Package, LayoutGrid, Layers, Tag,
   ShoppingBag, Users, Star, Home, FileText, Search, Megaphone,
-  BarChart3, Settings, Shield, type LucideIcon,
+  BarChart3, Settings, Shield, ImageIcon, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/storefront/Logo";
@@ -45,6 +45,7 @@ export function AdminSidebar({
       items: [
         { href: "/admin/homepage", label: "Homepage CMS", icon: Home },
         { href: "/admin/content", label: "Content CMS", icon: FileText },
+        { href: "/admin/media", label: "Media Library", icon: ImageIcon },
         { href: "/admin/seo", label: "SEO", icon: Search },
       ],
     },

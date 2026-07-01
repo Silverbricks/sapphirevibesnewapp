@@ -865,3 +865,18 @@ model Redirect {
   hits      Int      @default(0)
   createdAt DateTime @default(now())
 }
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  url       String
+  type      String   @default("image/jpeg")
+  alt       String?
+  folder    String   @default("general")
+  tags      String[] @default([])
+  bytes     Int      @default(0)
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  @@index([folder])
+}
