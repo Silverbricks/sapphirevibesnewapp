@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { requireModule } from "@/lib/auth-helpers";
 import { getSiteSettings, getBaseUrl } from "@/lib/data/settings";
 import { StatCard, Panel, PanelHead, Pill, Input, Textarea, FormField, buttonClasses } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
@@ -14,6 +15,7 @@ const fileInput =
   "block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold-soft";
 
 export default async function SeoPage() {
+  await requireModule("seo");
   const base = getBaseUrl();
   const [{ store }, seoRows, redirects, productCount, pageCount, postCount, missingProducts, missingPages] =
     await Promise.all([

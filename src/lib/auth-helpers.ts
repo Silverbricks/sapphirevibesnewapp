@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { auth } from "../../auth";
 import { STAFF_ROLES } from "../../auth.config";
+import { db } from "@/lib/db";
+import { canAccess, type Module } from "@/lib/permissions";
 
 export async function getSession() {
   return auth();
@@ -34,4 +36,15 @@ export async function requireRole(...roles: Role[]) {
   if (!session?.user) redirect("/login");
   if (!roles.includes(session.user.role)) redirect("/");
   return session.user;
+}
+
+/** Gate an admin page to staff who have access to a specific module. */
+export async function requireModule(module: Module) {
+  const user = await requireStaff();
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { permissions: true },
+  });
+  if (!canAccess(user.role, dbUser?.permissions, module)) redirect("/admin");
+  return user;
 }

@@ -20,21 +20,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({ allowDangerousEmailAccountLinking: true }),
     Credentials({
       credentials: { email: {}, password: {} },
-      authorize: async (creds) => {
+      authorize: async (creds, request) => {
         const parsed = credentialsSchema.safeParse(creds);
         if (!parsed.success) return null;
-        const user = await db.user.findUnique({
-          where: { email: parsed.data.email },
-        });
-        if (!user?.passwordHash) return null;
+        const email = parsed.data.email;
+        const ip = request?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+        const userAgent = request?.headers?.get("user-agent") || null;
+        const user = await db.user.findUnique({ where: { email } });
+
+        const log = (success: boolean) =>
+          db.loginLog
+            .create({ data: { email, ip, userAgent, success, userId: user?.id ?? null } })
+            .catch(() => {});
+
+        if (!user?.passwordHash || user.suspended) {
+          await log(false);
+          return null;
+        }
         const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
-        if (!ok) return null;
+        if (!ok) {
+          await log(false);
+          return null;
+        }
+        await log(true);
         return { id: user.id, name: user.name, email: user.email, image: user.image };
       },
     }),
   ],
   callbacks: {
     ...authConfig.callbacks,
+    // Block suspended accounts across all providers (incl. Google OAuth).
+    async signIn({ user }) {
+      if (!user?.email) return true;
+      const dbUser = await db.user.findUnique({
+        where: { email: user.email },
+        select: { suspended: true },
+      });
+      return !dbUser?.suspended;
+    },
     async jwt({ token, user }) {
       // On sign-in, enrich the token with role/customerType from the database.
       if (user?.id) {

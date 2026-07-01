@@ -209,6 +209,8 @@ model User {
   storeCreditCents Int     @default(0)
   phone            String?
   twoFactorEnabled Boolean @default(false)
+  suspended        Boolean @default(false)
+  permissions      Json?   // optional granular module allow-list (overrides role defaults)
   referralCode     String? @unique
 
   // notification preferences (account settings toggles)
@@ -864,6 +866,19 @@ model Redirect {
   permanent Boolean  @default(true) // 301 (permanent) vs 302 (temporary)
   hits      Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  ip        String?
+  userAgent String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
 }
 
 model MediaAsset {

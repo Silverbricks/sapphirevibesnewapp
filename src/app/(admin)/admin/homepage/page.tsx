@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireModule } from "@/lib/auth-helpers";
 import { getAllHomepageBlocks, getAnnouncement } from "@/lib/data/content";
 import { buttonClasses } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Homepage CMS · Admin" };
 
 export default async function HomepageCmsPage() {
+  await requireModule("homepage");
   const [blocks, announcement] = await Promise.all([getAllHomepageBlocks(), getAnnouncement()]);
   return (
     <>

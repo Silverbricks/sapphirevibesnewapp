@@ -9,61 +9,69 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/storefront/Logo";
+import type { Module } from "@/lib/permissions";
 
-type Item = { href: string; label: string; icon: LucideIcon; count?: string };
+type Item = { href: string; label: string; icon: LucideIcon; count?: string; module: Module };
 type Group = { title: string; items: Item[] };
 
 export function AdminSidebar({
   counts,
+  allowed,
 }: {
   counts: { inventory: string; orders: number; reviews: number };
+  allowed: Module[];
 }) {
   const pathname = usePathname();
+  const can = (m: Module) => allowed.includes(m);
 
-  const GROUPS: Group[] = [
-    { title: "Overview", items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }] },
+  const ALL_GROUPS: Group[] = [
+    { title: "Overview", items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" }] },
     {
       title: "Catalogue",
       items: [
-        { href: "/admin/inventory", label: "Inventory", icon: Boxes, count: counts.inventory },
-        { href: "/admin/products", label: "Products", icon: Package },
-        { href: "/admin/categories", label: "Categories", icon: LayoutGrid },
-        { href: "/admin/collections", label: "Collections", icon: Layers },
-        { href: "/admin/pricing", label: "Pricing", icon: Tag },
+        { href: "/admin/inventory", label: "Inventory", icon: Boxes, count: counts.inventory, module: "inventory" },
+        { href: "/admin/products", label: "Products", icon: Package, module: "products" },
+        { href: "/admin/categories", label: "Categories", icon: LayoutGrid, module: "categories" },
+        { href: "/admin/collections", label: "Collections", icon: Layers, module: "collections" },
+        { href: "/admin/pricing", label: "Pricing", icon: Tag, module: "pricing" },
       ],
     },
     {
       title: "Sales",
       items: [
-        { href: "/admin/orders", label: "Orders", icon: ShoppingBag, count: counts.orders ? String(counts.orders) : undefined },
-        { href: "/admin/customers", label: "Customers", icon: Users },
-        { href: "/admin/reviews", label: "Reviews", icon: Star, count: counts.reviews ? String(counts.reviews) : undefined },
+        { href: "/admin/orders", label: "Orders", icon: ShoppingBag, count: counts.orders ? String(counts.orders) : undefined, module: "orders" },
+        { href: "/admin/customers", label: "Customers", icon: Users, module: "customers" },
+        { href: "/admin/reviews", label: "Reviews", icon: Star, count: counts.reviews ? String(counts.reviews) : undefined, module: "reviews" },
       ],
     },
     {
       title: "Storefront",
       items: [
-        { href: "/admin/homepage", label: "Homepage CMS", icon: Home },
-        { href: "/admin/content", label: "Content CMS", icon: FileText },
-        { href: "/admin/media", label: "Media Library", icon: ImageIcon },
-        { href: "/admin/seo", label: "SEO", icon: Search },
+        { href: "/admin/homepage", label: "Homepage CMS", icon: Home, module: "homepage" },
+        { href: "/admin/content", label: "Content CMS", icon: FileText, module: "content" },
+        { href: "/admin/media", label: "Media Library", icon: ImageIcon, module: "media" },
+        { href: "/admin/seo", label: "SEO", icon: Search, module: "seo" },
       ],
     },
     {
       title: "Growth",
       items: [
-        { href: "/growth", label: "Marketing", icon: Megaphone },
-        { href: "/admin/reports", label: "Reports", icon: BarChart3 },
+        { href: "/growth", label: "Marketing", icon: Megaphone, module: "marketing" },
+        { href: "/admin/reports", label: "Reports", icon: BarChart3, module: "reports" },
       ],
     },
     {
       title: "System",
       items: [
-        { href: "/admin/settings", label: "Settings", icon: Settings },
-        { href: "/admin/team", label: "Team & Access", icon: Shield },
+        { href: "/admin/settings", label: "Settings", icon: Settings, module: "settings" },
+        { href: "/admin/team", label: "Team & Access", icon: Shield, module: "team" },
       ],
     },
   ];
+
+  const GROUPS: Group[] = ALL_GROUPS
+    .map((g) => ({ ...g, items: g.items.filter((i) => can(i.module)) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-[248px] flex-col overflow-y-auto border-r border-line bg-ink max-lg:w-[64px]">

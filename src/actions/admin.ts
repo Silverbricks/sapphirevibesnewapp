@@ -288,6 +288,43 @@ export async function updateStaffRole(userId: string, role: string) {
   revalidatePath("/admin/team");
 }
 
+export async function setStaffSuspended(userId: string, suspended: boolean) {
+  const actor = await requireRole(Role.SUPER_ADMIN);
+  await db.user.update({ where: { id: userId }, data: { suspended } });
+  await db.auditLog.create({ data: { actorName: actor.name, action: suspended ? "Suspended member" : "Reinstated member", targetType: "User", targetId: userId } });
+  revalidatePath("/admin/team");
+  return { ok: true as const };
+}
+
+export async function resetStaffPassword(userId: string, newPassword: string) {
+  const actor = await requireRole(Role.SUPER_ADMIN);
+  if (!newPassword || newPassword.length < 6) return { error: "Password must be at least 6 characters." };
+  const hash = await bcrypt.hash(newPassword, 10);
+  await db.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+  await db.auditLog.create({ data: { actorName: actor.name, action: "Reset member password", targetType: "User", targetId: userId } });
+  revalidatePath("/admin/team");
+  return { ok: true as const };
+}
+
+export async function setTwoFactor(userId: string, enabled: boolean) {
+  const actor = await requireRole(Role.SUPER_ADMIN);
+  await db.user.update({ where: { id: userId }, data: { twoFactorEnabled: enabled } });
+  await db.auditLog.create({ data: { actorName: actor.name, action: enabled ? "Enabled 2FA" : "Disabled 2FA", targetType: "User", targetId: userId } });
+  revalidatePath("/admin/team");
+  return { ok: true as const };
+}
+
+export async function updateStaffPermissions(userId: string, modules: string[]) {
+  const actor = await requireRole(Role.SUPER_ADMIN);
+  await db.user.update({
+    where: { id: userId },
+    data: { permissions: modules as unknown as Prisma.InputJsonValue },
+  });
+  await db.auditLog.create({ data: { actorName: actor.name, action: "Updated member permissions", targetType: "User", targetId: userId, meta: { modules } } });
+  revalidatePath("/admin/team");
+  return { ok: true as const };
+}
+
 export async function moderateReview(id: string, status: string) {
   const staff = await requireStaff();
   await db.review.update({ where: { id }, data: { status: status as ReviewStatus } });

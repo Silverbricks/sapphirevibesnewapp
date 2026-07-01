@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireModule } from "@/lib/auth-helpers";
 import { getMediaAssets, getMediaFolders, getMediaStats } from "@/lib/data/media";
 import { StatCard, Panel, Input } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
@@ -18,6 +19,7 @@ export default async function MediaPage({
 }: {
   searchParams: Promise<{ folder?: string; q?: string }>;
 }) {
+  await requireModule("media");
   const { folder, q } = await searchParams;
   const active = folder ?? "all";
   const [assets, folders, stats] = await Promise.all([

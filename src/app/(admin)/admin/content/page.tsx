@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FileText, Newspaper, HelpCircle, Quote, MessageSquare, ArrowRight } from "lucide-react";
 import { getContentCounts } from "@/lib/data/content";
+import { requireModule } from "@/lib/auth-helpers";
 import { Panel } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Content CMS · Admin" };
 
 export default async function ContentHubPage() {
+  await requireModule("content");
   const c = await getContentCounts();
 
   const cards = [

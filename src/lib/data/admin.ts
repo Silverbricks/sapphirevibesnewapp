@@ -169,15 +169,19 @@ export async function getAdminReviews(status?: string) {
 }
 
 export async function getTeamData() {
-  const [staff, logs] = await Promise.all([
+  const [staff, logs, logins] = await Promise.all([
     db.user.findMany({
       where: { role: { in: STAFF_ROLES_LIST } },
       orderBy: { lastActiveAt: "desc" },
-      select: { id: true, name: true, email: true, role: true, twoFactorEnabled: true, lastActiveAt: true },
+      select: {
+        id: true, name: true, email: true, role: true,
+        twoFactorEnabled: true, suspended: true, permissions: true, lastActiveAt: true,
+      },
     }),
     db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 12 }),
+    db.loginLog.findMany({ orderBy: { createdAt: "desc" }, take: 12 }),
   ]);
-  return { staff, logs };
+  return { staff, logs, logins };
 }
 
 export async function getContentData() {
