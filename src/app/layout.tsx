@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
-import { SITE } from "@/lib/constants";
+import { getSeoSettings, getBaseUrl } from "@/lib/data/settings";
 import { Providers } from "./providers";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
-    template: `%s · ${SITE.name}`,
-  },
-  description: SITE.description,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { seo, branding } = await getSeoSettings();
+  return {
+    metadataBase: new URL(getBaseUrl()),
+    title: { default: seo.defaultTitle, template: seo.titleTemplate },
+    description: seo.defaultDescription,
+    keywords: seo.keywords ? seo.keywords.split(",").map((k) => k.trim()).filter(Boolean) : undefined,
+    icons: branding.faviconUrl ? { icon: branding.faviconUrl } : undefined,
+    openGraph: {
+      title: seo.defaultTitle,
+      description: seo.defaultDescription,
+      images: seo.ogImage ? [seo.ogImage] : undefined,
+    },
+  };
+}
 
 export default function RootLayout({
   children,

@@ -59,9 +59,49 @@ const SOCIAL_DEFAULTS: SocialSettings = {
   youtube: "",
 };
 
+export interface SeoSettings {
+  defaultTitle: string;
+  titleTemplate: string;
+  defaultDescription: string;
+  keywords: string;
+  ogImage: string | null;
+}
+
+const SEO_DEFAULTS: SeoSettings = {
+  defaultTitle: `${SITE.name} — ${SITE.tagline}`,
+  titleTemplate: `%s · ${SITE.name}`,
+  defaultDescription: SITE.description,
+  keywords: "luxury home décor, lighting, furniture, gifts",
+  ogImage: null,
+};
+
 const BRANDING_DEFAULTS: BrandingSettings = { logoUrl: null, faviconUrl: null };
 const TAX_DEFAULTS: TaxSettings = { gstRate: 0.1, display: "Inclusive of GST", abn: SITE.abn };
 const SHIPPING_DEFAULTS: ShippingSettings = { freeOver250: true, express: true, clickCollect: false, localDelivery: true };
+
+/** Canonical site base URL (no trailing slash) for sitemaps, OG tags and redirects. */
+export function getBaseUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.AUTH_URL ||
+    process.env.NEXTAUTH_URL ||
+    "https://sapphirevibes.com";
+  return raw.replace(/\/$/, "");
+}
+
+/** Lightweight fetch of just SEO + branding (used by the root layout metadata). */
+export async function getSeoSettings(): Promise<{ seo: SeoSettings; branding: BrandingSettings }> {
+  try {
+    const rows = await db.setting.findMany({ where: { key: { in: ["seo", "branding"] } } });
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, Record<string, unknown>>;
+    return {
+      seo: { ...SEO_DEFAULTS, ...(map.seo ?? {}) },
+      branding: { ...BRANDING_DEFAULTS, ...(map.branding ?? {}) },
+    };
+  } catch {
+    return { seo: SEO_DEFAULTS, branding: BRANDING_DEFAULTS };
+  }
+}
 
 /** Read a group of settings, merged over sensible defaults. Safe on DB outage. */
 export async function getSiteSettings(): Promise<{

@@ -87,6 +87,23 @@ export async function saveTaxSettings(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function saveSeoSettings(formData: FormData) {
+  const staff = await requireStaff();
+  const ogFile = await saveUploadedImage(formData.get("ogFile") as File | null);
+  const existing = (await db.setting.findUnique({ where: { key: "seo" } }))?.value as { ogImage?: string | null } | null;
+  await upsertSetting("seo", {
+    defaultTitle: str(formData, "defaultTitle") || "Sapphire Vibes",
+    titleTemplate: str(formData, "titleTemplate") || "%s · Sapphire Vibes",
+    defaultDescription: str(formData, "defaultDescription"),
+    keywords: str(formData, "keywords"),
+    ogImage: ogFile || str(formData, "ogImage") || existing?.ogImage || null,
+  });
+  await logSetting(staff.name, "seo");
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/seo");
+  return { ok: true as const };
+}
+
 export async function saveShippingSettings(formData: FormData) {
   const staff = await requireStaff();
   await upsertSetting("shipping", {

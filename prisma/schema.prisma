@@ -856,3 +856,12 @@ model Setting {
   key   String @unique
   value Json
 }
+
+model Redirect {
+  id        String   @id @default(cuid())
+  from      String   @unique
+  to        String
+  permanent Boolean  @default(true) // 301 (permanent) vs 302 (temporary)
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+}
