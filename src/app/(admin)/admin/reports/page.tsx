@@ -19,7 +19,12 @@ export default async function ReportsPage() {
       <PageHead
         title="Reports"
         subtitle="Sales, revenue, product performance and customer insights."
-        actions={<span className={buttonClasses("outline", "md")}>Download PDF</span>}
+        actions={
+          <div className="flex items-center gap-2">
+            <a href="/api/admin/export?type=orders" className={buttonClasses("outline", "md")}>Export Orders CSV</a>
+            <a href="/api/admin/export?type=products" className={buttonClasses("outline", "md")}>Export Products CSV</a>
+          </div>
+        }
       />
       <div className="mb-[26px] grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Revenue" value={formatCompactMoney(r.ytdRevenueCents)} delta="22% YoY" />

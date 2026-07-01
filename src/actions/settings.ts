@@ -104,6 +104,19 @@ export async function saveSeoSettings(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function saveIntegration(id: string, formData: FormData) {
+  const staff = await requireStaff();
+  const status = (str(formData, "status") || "SETUP") as "CONNECTED" | "SETUP" | "DISCONNECTED";
+  const config = {
+    apiKey: str(formData, "apiKey"),
+    webhookUrl: str(formData, "webhookUrl"),
+  };
+  await db.integration.update({ where: { id }, data: { status, config } });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Updated integration", targetType: "Integration", targetId: id } });
+  revalidatePath("/admin/settings");
+  return { ok: true as const };
+}
+
 export async function saveShippingSettings(formData: FormData) {
   const staff = await requireStaff();
   await upsertSetting("shipping", {

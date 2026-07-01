@@ -2,10 +2,11 @@ import Image from "next/image";
 import { requireModule } from "@/lib/auth-helpers";
 import { getSettingsData } from "@/lib/data/admin";
 import { getSiteSettings } from "@/lib/data/settings";
-import { Panel, Pill, Input, Textarea, FormField, type PillColor } from "@/components/ui";
+import { Panel, Input, Textarea, FormField } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
 import { SettingForm } from "@/components/admin/SettingForm";
 import { ShippingSettingsForm } from "@/components/admin/ShippingSettingsForm";
+import { IntegrationsEditor } from "@/components/admin/IntegrationsEditor";
 import {
   saveStoreSettings,
   saveBrandingSettings,
@@ -15,8 +16,6 @@ import {
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings · Admin" };
-
-const INT_COLOR: Record<string, PillColor> = { CONNECTED: "green", SETUP: "amber", DISCONNECTED: "grey" };
 
 const fileInput =
   "block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold-soft";
@@ -94,17 +93,7 @@ export default async function SettingsPage() {
 
       <Panel>
         <h3 className="mb-4 font-serif text-[21px]">Integrations</h3>
-        <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
-          {integrations.map((i) => (
-            <div key={i.id} className="flex items-center justify-between border-b border-line py-3.5">
-              <div>
-                <div className="text-sm">{i.name}</div>
-                <div className="text-xs text-muted">{i.blurb}</div>
-              </div>
-              <Pill color={INT_COLOR[i.status] ?? "grey"}>{i.status.charAt(0) + i.status.slice(1).toLowerCase()}</Pill>
-            </div>
-          ))}
-        </div>
+        <IntegrationsEditor integrations={integrations} />
       </Panel>
     </>
   );

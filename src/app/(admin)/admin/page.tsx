@@ -48,7 +48,18 @@ export default async function AdminDashboard() {
         <MiniStat label="Total Products" value={formatNumber(d.totalProducts)} />
         <MiniStat label="Low Stock" value={d.lowStock} tone="warn" />
         <MiniStat label="Out of Stock" value={d.outStock} tone="danger" />
-        <MiniStat label="Visitors Today" value="4,820" />
+        <MiniStat label="Total Customers" value={formatNumber(d.totalCustomers)} />
+      </div>
+
+      <div className="mb-[26px] grid grid-cols-2 gap-[18px] md:grid-cols-4 lg:grid-cols-8">
+        <MiniStat label="Categories" value={d.totalCategories} />
+        <MiniStat label="Published Posts" value={d.blogPosts} />
+        <MiniStat label="Subscribers" value={formatNumber(d.subscribers)} />
+        <MiniStat label="Pending Reviews" value={d.pendingReviews} tone={d.pendingReviews ? "warn" : undefined} />
+        <MiniStat label="Pending Comments" value={d.pendingComments} tone={d.pendingComments ? "warn" : undefined} />
+        <MiniStat label="Delivered" value={formatNumber(d.completed)} />
+        <MiniStat label="Revenue Today" value={formatCompactMoney(d.revenueTodayCents)} />
+        <MiniStat label="Total Orders" value={formatNumber(d.ordersCount)} />
       </div>
 
       <div className="mb-[26px] grid grid-cols-1 gap-[18px] lg:grid-cols-[2fr_1fr]">

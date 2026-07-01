@@ -11,6 +11,34 @@ const STAFF_ROLES_LIST: Role[] = [
   Role.FINANCE_MANAGER, Role.CUSTOMER_SUPPORT,
 ];
 
+export interface AdminNotification {
+  id: string;
+  type: "order" | "stock" | "review" | "comment" | "customer";
+  text: string;
+  href: string;
+  at: Date;
+}
+
+/** A computed, real-time notification feed derived from live data (no separate table). */
+export async function getAdminNotifications(): Promise<AdminNotification[]> {
+  const [orders, lowStock, reviews, comments, customers] = await Promise.all([
+    db.order.findMany({ where: { status: OrderStatus.PENDING }, take: 6, orderBy: { placedAt: "desc" }, select: { number: true, placedAt: true } }),
+    db.product.findMany({ where: { stock: { lte: 5 } }, take: 6, orderBy: { stock: "asc" }, select: { id: true, name: true, stock: true, updatedAt: true } }),
+    db.review.findMany({ where: { status: { in: ["PENDING", "FLAGGED"] } }, take: 6, orderBy: { createdAt: "desc" }, select: { id: true, createdAt: true } }),
+    db.blogComment.findMany({ where: { status: "PENDING" }, take: 6, orderBy: { createdAt: "desc" }, select: { id: true, author: true, createdAt: true } }),
+    db.user.findMany({ where: { role: { in: CUSTOMER_ROLES } }, take: 4, orderBy: { createdAt: "desc" }, select: { id: true, name: true, createdAt: true } }),
+  ]);
+
+  const items: AdminNotification[] = [
+    ...orders.map((o) => ({ id: `o-${o.number}`, type: "order" as const, text: `New order ${o.number} awaiting processing`, href: `/admin/orders/${o.number}`, at: o.placedAt })),
+    ...lowStock.map((p) => ({ id: `s-${p.id}`, type: "stock" as const, text: `${p.name} is low on stock (${p.stock} left)`, href: `/admin/inventory`, at: p.updatedAt })),
+    ...reviews.map((r) => ({ id: `r-${r.id}`, type: "review" as const, text: `A review is awaiting moderation`, href: `/admin/reviews`, at: r.createdAt })),
+    ...comments.map((c) => ({ id: `c-${c.id}`, type: "comment" as const, text: `${c.author} left a comment awaiting approval`, href: `/admin/content/comments`, at: c.createdAt })),
+    ...customers.map((u) => ({ id: `u-${u.id}`, type: "customer" as const, text: `${u.name ?? "A new customer"} just signed up`, href: `/admin/customers`, at: u.createdAt })),
+  ];
+  return items.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 15);
+}
+
 export async function getAdminDashboard() {
   const now = new Date();
   const monthAgo = new Date(now);
@@ -34,6 +62,11 @@ export async function getAdminDashboard() {
     newCustomers,
     topProducts,
     recentOrders,
+    subscribers,
+    blogPosts,
+    pendingReviews,
+    pendingComments,
+    totalCategories,
   ] = await Promise.all([
     db.order.aggregate({ _sum: { totalCents: true }, where: { placedAt: { gte: monthAgo }, ...NON_CANCELLED } }),
     db.order.aggregate({ _sum: { totalCents: true }, where: { placedAt: { gte: startToday }, ...NON_CANCELLED } }),
@@ -56,6 +89,11 @@ export async function getAdminDashboard() {
       take: 5,
       select: { id: true, number: true, customerName: true, totalCents: true, status: true, placedAt: true, _count: { select: { items: true } } },
     }),
+    db.subscriber.count(),
+    db.blogPost.count({ where: { status: "PUBLISHED" } }),
+    db.review.count({ where: { status: { in: ["PENDING", "FLAGGED"] } } }),
+    db.blogComment.count({ where: { status: "PENDING" } }),
+    db.category.count(),
   ]);
 
   return {
@@ -72,6 +110,11 @@ export async function getAdminDashboard() {
     newCustomers,
     topProducts,
     recentOrders,
+    subscribers,
+    blogPosts,
+    pendingReviews,
+    pendingComments,
+    totalCategories,
   };
 }
 

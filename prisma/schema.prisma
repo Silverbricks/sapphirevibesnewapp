@@ -762,6 +762,7 @@ model Integration {
   category  String
   blurb     String?
   status    IntegrationStatus @default(SETUP)
+  config    Json?             // { apiKey, webhookUrl, ... }
 }
 
 // ───────────────────────────────────── CMS / content ─────────────────────────────────
