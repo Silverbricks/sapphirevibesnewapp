@@ -15,7 +15,10 @@ const TTL = 60_000;
 async function getSystemConfig(origin: string): Promise<SystemConfig> {
   if (cache && Date.now() - cache.at < TTL) return cache.config;
   try {
-    const res = await fetch(`${origin}/api/redirects`, { headers: { "x-mw": "1" } });
+    const res = await fetch(`${origin}/api/redirects`, {
+      headers: { "x-mw": "1" },
+      signal: AbortSignal.timeout(2000),
+    });
     const data = (await res.json()) as { redirects: RedirectRow[]; maintenance: boolean };
     const config: SystemConfig = {
       map: new Map(data.redirects.map((r) => [r.from, r])),
