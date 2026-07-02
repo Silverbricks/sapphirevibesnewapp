@@ -3,9 +3,11 @@ import { Instagram, Facebook, Youtube } from "lucide-react";
 import { Logo } from "./Logo";
 import { SITE, FOOTER_COLUMNS, PAYMENT_METHODS_DISPLAY } from "@/lib/constants";
 import { getSiteSettings } from "@/lib/data/settings";
+import { getCategoryMenu } from "@/lib/data/catalog";
 
 export async function Footer() {
-  const { store, social } = await getSiteSettings();
+  const [{ store, social }, categories] = await Promise.all([getSiteSettings(), getCategoryMenu()]);
+  const shopLinks = categories.slice(0, 6).map((c) => ({ label: c.name, href: `/shop/${c.slug}` }));
   const socials = [
     { href: social.instagram, Icon: Instagram, label: "Instagram" },
     { href: social.facebook, Icon: Facebook, label: "Facebook" },
@@ -50,7 +52,16 @@ export async function Footer() {
               ))}
             </div>
           </div>
-          {FOOTER_COLUMNS.map((col) => (
+          {/* Shop column — driven by live categories (falls back to constants if empty) */}
+          <div>
+            <h5 className="mb-5 text-[11px] uppercase tracking-[0.2em] text-gold">Shop</h5>
+            {(shopLinks.length > 0 ? shopLinks : FOOTER_COLUMNS[0].links).map((l) => (
+              <Link key={l.label} href={l.href} className="block py-[7px] text-sm text-muted transition-colors hover:text-cream">
+                {l.label}
+              </Link>
+            ))}
+          </div>
+          {FOOTER_COLUMNS.slice(1).map((col) => (
             <div key={col.title}>
               <h5 className="mb-5 text-[11px] uppercase tracking-[0.2em] text-gold">
                 {col.title}

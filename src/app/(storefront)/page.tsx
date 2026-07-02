@@ -1,16 +1,17 @@
 import { getNewArrivals, getBestSellers } from "@/lib/data/products";
 import { getShopTheLook } from "@/lib/data/catalog";
 import { getFeaturedTestimonials, getHeroSlides, getVisibleBlockKeys, getPromoBanner } from "@/lib/data/content";
+import { getCategoryMenu } from "@/lib/data/catalog";
 import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { CompleteTheLook } from "@/components/storefront/CompleteTheLook";
 import { Newsletter } from "@/components/storefront/Newsletter";
 import { RecentlyViewed } from "@/components/storefront/RecentlyViewed";
 import { HeroSlider } from "@/components/storefront/HeroSlider";
 import { PromoBanner } from "@/components/storefront/PromoBanner";
+import { CategoryTiles } from "@/components/storefront/CategoryTiles";
 import {
   Hero,
   Marquee,
-  ShopByRoom,
   CollectionBand,
   Features,
   LoyaltyReferralBand,
@@ -23,13 +24,14 @@ const img = (id: string, w = 1100) => `https://images.unsplash.com/photo-${id}?w
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [newArrivals, bestSellers, testimonials, look, heroSlides, promoBanner, visibleKeys] = await Promise.all([
+  const [newArrivals, bestSellers, testimonials, look, heroSlides, promoBanner, categories, visibleKeys] = await Promise.all([
     getNewArrivals(4),
     getBestSellers(4),
     getFeaturedTestimonials(3),
     getShopTheLook(),
     getHeroSlides(),
     getPromoBanner(),
+    getCategoryMenu(),
     getVisibleBlockKeys(),
   ]);
   // homepage sections toggle on/off from the CMS (default shown if no block exists)
@@ -48,11 +50,11 @@ export default async function HomePage() {
         </section>
       )}
 
-      {show("rooms") && (
+      {show("rooms") && categories.length > 0 && (
         <section className="py-24">
           <div className="wrap">
-            <SectionHead eyebrow="Curated Spaces" title="Shop by Room" href="/rooms" cta="View all rooms" />
-            <ShopByRoom />
+            <SectionHead eyebrow="Browse the Range" title="Shop by Category" href="/shop" cta="View all categories" />
+            <CategoryTiles categories={categories} />
           </div>
         </section>
       )}

@@ -11,6 +11,31 @@ export async function getTopCategories() {
   });
 }
 
+/** Lightweight category tree for the storefront nav / footer / homepage tiles. Safe on DB outage. */
+export async function getCategoryMenu() {
+  try {
+    return await db.category.findMany({
+      where: { parentId: null },
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: {
+        name: true,
+        slug: true,
+        imageUrl: true,
+        children: { orderBy: [{ displayOrder: "asc" }, { name: "asc" }], select: { name: true, slug: true } },
+      },
+    });
+  } catch {
+    return [];
+  }
+}
+
+export type CategoryMenuItem = {
+  name: string;
+  slug: string;
+  imageUrl: string | null;
+  children: { name: string; slug: string }[];
+};
+
 export async function getCategoryBySlug(slug: string) {
   return db.category.findUnique({
     where: { slug },

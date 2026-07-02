@@ -90,20 +90,98 @@ export async function deleteProduct(id: string) {
   revalidatePath("/admin/inventory");
 }
 
+/** Slugify a category name, ensuring uniqueness (keeps a clean URL where possible). */
+async function uniqueCategorySlug(name: string, excludeId?: string): Promise<string> {
+  const base = slugify(name) || "category";
+  let slug = base;
+  for (let i = 0; i < 20; i++) {
+    const existing = await db.category.findUnique({ where: { slug } });
+    if (!existing || existing.id === excludeId) return slug;
+    slug = `${base}-${Math.floor(100 + Math.random() * 900)}`;
+  }
+  return `${base}-${Date.now()}`;
+}
+
+function catNum(v: FormDataEntryValue | null, fallback = 0): number {
+  return parseInt((v as string) || String(fallback), 10) || fallback;
+}
+
 export async function createCategory(formData: FormData) {
   const staff = await requireStaff();
   const name = (formData.get("name") as string)?.trim();
   if (!name) return;
+  const uploaded = await saveUploadedImage(formData.get("imageFile") as File | null);
   await db.category.create({
     data: {
       name,
-      slug: `${slugify(name)}-${Math.floor(100 + Math.random() * 900)}`,
+      slug: await uniqueCategorySlug(name),
       parentId: (formData.get("parentId") as string) || null,
-      description: (formData.get("description") as string) || null,
+      description: (formData.get("description") as string)?.trim() || null,
+      imageUrl: uploaded || (formData.get("imageUrl") as string)?.trim() || null,
+      displayOrder: catNum(formData.get("displayOrder")),
+      seoTitle: (formData.get("seoTitle") as string)?.trim() || null,
+      seoDesc: (formData.get("seoDesc") as string)?.trim() || null,
     },
   });
   await db.auditLog.create({ data: { actorName: staff.name, action: "Created category", targetType: "Category", meta: { name } } });
   revalidatePath("/admin/categories");
+  revalidatePath("/", "layout");
+}
+
+export async function updateCategory(formData: FormData) {
+  const staff = await requireStaff();
+  const id = (formData.get("id") as string) || "";
+  const name = (formData.get("name") as string)?.trim();
+  if (!id || !name) return { error: "Name is required." };
+  const current = await db.category.findUnique({ where: { id } });
+  if (!current) return { error: "Category not found." };
+
+  const uploaded = await saveUploadedImage(formData.get("imageFile") as File | null);
+  const rawParent = (formData.get("parentId") as string) || "";
+  await db.category.update({
+    where: { id },
+    data: {
+      name,
+      slug: name !== current.name ? await uniqueCategorySlug(name, id) : current.slug,
+      parentId: rawParent && rawParent !== id ? rawParent : null,
+      description: (formData.get("description") as string)?.trim() || null,
+      imageUrl: uploaded || (formData.get("imageUrl") as string)?.trim() || current.imageUrl || null,
+      displayOrder: catNum(formData.get("displayOrder"), current.displayOrder),
+      seoTitle: (formData.get("seoTitle") as string)?.trim() || null,
+      seoDesc: (formData.get("seoDesc") as string)?.trim() || null,
+    },
+  });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Updated category", targetType: "Category", targetId: id, meta: { name } } });
+  revalidatePath("/admin/categories");
+  revalidatePath("/", "layout");
+  return { ok: true as const };
+}
+
+export async function deleteCategory(id: string) {
+  const staff = await requireStaff();
+  const cat = await db.category.findUnique({ where: { id }, include: { _count: { select: { products: true, children: true } } } });
+  if (!cat) return { error: "Category not found." };
+  if (cat._count.products > 0) return { error: `Cannot delete — ${cat._count.products} product(s) still use this category. Reassign them first.` };
+  if (cat._count.children > 0) return { error: `Cannot delete — remove its ${cat._count.children} subcategory(ies) first.` };
+  await db.category.delete({ where: { id } });
+  await db.auditLog.create({ data: { actorName: staff.name, action: "Deleted category", targetType: "Category", targetId: id } });
+  revalidatePath("/admin/categories");
+  revalidatePath("/", "layout");
+  return { ok: true as const };
+}
+
+export async function reorderCategory(id: string, direction: "up" | "down") {
+  await requireStaff();
+  const cat = await db.category.findUnique({ where: { id } });
+  if (!cat) return;
+  const siblings = await db.category.findMany({ where: { parentId: cat.parentId }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] });
+  const idx = siblings.findIndex((s) => s.id === id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= siblings.length) return;
+  [siblings[idx], siblings[swapIdx]] = [siblings[swapIdx], siblings[idx]];
+  await db.$transaction(siblings.map((s, i) => db.category.update({ where: { id: s.id }, data: { displayOrder: i } })));
+  revalidatePath("/admin/categories");
+  revalidatePath("/", "layout");
 }
 
 export async function createCollection(formData: FormData) {

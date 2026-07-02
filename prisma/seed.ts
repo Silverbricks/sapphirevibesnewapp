@@ -53,32 +53,59 @@ async function main() {
   }
   const supplier = await db.supplier.create({ data: { name: "Atelier Imports", contact: "supply@atelier.au", leadDays: 14 } });
 
-  // ── Categories (top level + a few subcategories) ────────────────────────
-  const catDefs: { name: string; order: number; children?: string[] }[] = [
-    { name: "Living Room", order: 1 },
-    { name: "Bedroom", order: 2 },
-    { name: "Dining", order: 3 },
-    { name: "Kitchen", order: 4 },
-    { name: "Bathroom", order: 5 },
-    { name: "Lighting", order: 6, children: ["Pendant Lights", "Chandeliers", "Table Lamps", "Floor Lamps", "Outdoor Lighting"] },
-    { name: "Home Décor", order: 7, children: ["Vases", "Mirrors", "Sculptures", "Wall Art"] },
-    { name: "Furniture", order: 8, children: ["Accent Chairs", "Coffee Tables", "Consoles"] },
-    { name: "Soft Furnishings", order: 9, children: ["Rugs", "Cushions", "Throws"] },
-    { name: "Fragrance", order: 10, children: ["Candles", "Diffusers"] },
-    { name: "Gifts", order: 11 },
-    { name: "Seasonal", order: 12 },
-    { name: "Outdoor", order: 13 },
+  // ── Categories (real 13-category taxonomy: top level + subcategories) ────
+  type Child = { name: string; slug: string };
+  const catDefs: { name: string; slug: string; order: number; image: string; children: Child[] }[] = [
+    { name: "Furniture", slug: "furniture", order: 1, image: "1567538096630-e0c55bd6374c", children: [
+      { name: "Console Tables", slug: "console-tables" }, { name: "Side Tables", slug: "side-tables" },
+      { name: "Coffee Tables", slug: "coffee-tables" }, { name: "Bar Carts", slug: "bar-carts" },
+      { name: "Stools", slug: "stools" }, { name: "Cabinets & Storage", slug: "cabinets-storage" } ] },
+    { name: "Mirrors", slug: "mirrors", order: 2, image: "1618220179428-22790b461013", children: [
+      { name: "Wall Mirrors", slug: "wall-mirrors" }, { name: "Round Mirrors", slug: "round-mirrors" },
+      { name: "Metal Frame Mirrors", slug: "metal-frame-mirrors" }, { name: "Statement Mirrors", slug: "statement-mirrors" },
+      { name: "Cutwork Mirrors", slug: "cutwork-mirrors" } ] },
+    { name: "Wall Art & Décor", slug: "wall-art-decor", order: 3, image: "1586023492125-27b2c045efd7", children: [
+      { name: "Metal Wall Art", slug: "metal-wall-art" }, { name: "Flower Wall Décor", slug: "flower-wall-decor" },
+      { name: "Leaf Wall Décor", slug: "leaf-wall-decor" }, { name: "Abstract Wall Art", slug: "abstract-wall-art" },
+      { name: "Animal Wall Décor", slug: "animal-wall-decor" }, { name: "Geometric Wall Designs", slug: "geometric-wall-designs" } ] },
+    { name: "Statues & Figurines", slug: "statues-figurines", order: 4, image: "1578500494198-246f612d3b3d", children: [
+      { name: "Buddha Statues", slug: "buddha-statues" }, { name: "Ganesh Statues", slug: "ganesh-statues" },
+      { name: "Animal Statues", slug: "animal-statues" }, { name: "Religious Figurines", slug: "religious-figurines" },
+      { name: "Decorative Figurines", slug: "decorative-figurines" } ] },
+    { name: "Artificial Plants & Planters", slug: "plants-planters", order: 5, image: "1586023492125-27b2c045efd7", children: [
+      { name: "Ficus Plants", slug: "ficus-plants" }, { name: "Palm Trees", slug: "palm-trees" },
+      { name: "Monstera Plants", slug: "monstera-plants" }, { name: "Magnolia Plants", slug: "magnolia-plants" },
+      { name: "Planter Pots", slug: "planter-pots" } ] },
+    { name: "Lamps & Lighting Décor", slug: "lamps-lighting", order: 6, image: "1507473885765-e6ed057f782c", children: [
+      { name: "Decorative Lamps", slug: "decorative-lamps" }, { name: "Lanterns", slug: "lanterns" },
+      { name: "Wall Lights", slug: "wall-lights" } ] },
+    { name: "Vases & Ginger Jars", slug: "vases-ginger-jars", order: 7, image: "1578500494198-246f612d3b3d", children: [
+      { name: "Ceramic Vases", slug: "ceramic-vases" }, { name: "Gold Vases", slug: "gold-vases" },
+      { name: "Decorative Jars", slug: "decorative-jars" }, { name: "Glass & Metal Jars", slug: "glass-metal-jars" } ] },
+    { name: "Candle Holders", slug: "candle-holders", order: 8, image: "1603006905003-be475563bc59", children: [
+      { name: "Metal Candle Holders", slug: "metal-candle-holders" }, { name: "Glass Candle Holders", slug: "glass-candle-holders" },
+      { name: "Candle Stands", slug: "candle-stands" } ] },
+    { name: "Trays & Home Accessories", slug: "trays-accessories", order: 9, image: "1600166898405-da9535204843", children: [
+      { name: "Decorative Trays", slug: "decorative-trays" }, { name: "Serving Trays", slug: "serving-trays" },
+      { name: "Storage Boxes", slug: "storage-boxes" }, { name: "Tissue Boxes", slug: "tissue-boxes" },
+      { name: "Metal Décor Boxes", slug: "metal-decor-boxes" } ] },
+    { name: "Water Features", slug: "water-features", order: 10, image: "1578500494198-246f612d3b3d", children: [
+      { name: "Buddha Fountains", slug: "buddha-fountains" }, { name: "Garden Fountains", slug: "garden-fountains" },
+      { name: "LED Water Fountains", slug: "led-water-fountains" }, { name: "Cascading Waterfalls", slug: "cascading-waterfalls" } ] },
+    { name: "Cushions & Soft Décor", slug: "cushions-soft-decor", order: 11, image: "1584100936595-c0654b55a2e2", children: [
+      { name: "Decorative Cushions", slug: "decorative-cushions" }, { name: "Sofa Cushions", slug: "sofa-cushions" } ] },
+    { name: "Gift & Décor Items", slug: "gifts-decor", order: 12, image: "1549465220-1a8b9238cd48", children: [
+      { name: "Mini Figurines", slug: "mini-figurines" }, { name: "Desktop Décor", slug: "desktop-decor" },
+      { name: "Small Sculptures", slug: "small-sculptures" }, { name: "Decorative Gifts", slug: "decorative-gifts" } ] },
   ];
   const cats: Record<string, string> = {};
   for (const c of catDefs) {
-    const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const parent = await db.category.create({
-      data: { name: c.name, slug, displayOrder: c.order, imageUrl: img("1586023492125-27b2c045efd7", 600) },
+      data: { name: c.name, slug: c.slug, displayOrder: c.order, imageUrl: img(c.image, 600) },
     });
     cats[c.name] = parent.id;
-    for (const child of c.children ?? []) {
-      const cslug = child.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      await db.category.create({ data: { name: child, slug: cslug, parentId: parent.id } });
+    for (const child of c.children) {
+      await db.category.create({ data: { name: child.name, slug: child.slug, parentId: parent.id } });
     }
   }
 
@@ -107,18 +134,35 @@ async function main() {
     material: string; colour: string; style: string; desc: string; collections: string[];
   };
   const products: P[] = [
-    { name: "Aurelia Brass Pendant", sku: "LGT-AUR-001", brand: "Lumière Co.", category: "Lighting", room: "Living Room", price: 38900, cost: 18000, stock: 48, max: 60, rating: 5, reviews: 284, sales: 284, badges: ["LATEST", "LUXURY"], image: "1513506003901-1e6a229e2d15", material: "Brass, alabaster", colour: "Antique gold", style: "Modern", desc: "A hand-finished brass pendant with a warm antique glow — the sculptural centrepiece your entryway deserves.", collections: ["sculptural-lighting", "premium-lighting", "luxury-collection", "new-arrivals", "best-sellers"] },
+    { name: "Aurelia Brass Pendant", sku: "LGT-AUR-001", brand: "Lumière Co.", category: "Lamps & Lighting Décor", room: "Living Room", price: 38900, cost: 18000, stock: 48, max: 60, rating: 5, reviews: 284, sales: 284, badges: ["LATEST", "LUXURY"], image: "1513506003901-1e6a229e2d15", material: "Brass, alabaster", colour: "Antique gold", style: "Modern", desc: "A hand-finished brass pendant with a warm antique glow — the sculptural centrepiece your entryway deserves.", collections: ["sculptural-lighting", "premium-lighting", "luxury-collection", "new-arrivals", "best-sellers"] },
     { name: "Velvet Accent Chair", sku: "FRN-VEL-014", brand: "Maison Atelier", category: "Furniture", room: "Living Room", price: 89900, compare: 119900, cost: 42000, stock: 6, max: 40, rating: 4, reviews: 156, sales: 156, badges: ["ON_SALE", "BEST_SELLER"], image: "1567538096630-e0c55bd6374c", material: "Velvet, hardwood", colour: "Emerald", style: "Contemporary", desc: "Deep emerald velvet over a solid hardwood frame. As comfortable as it is striking.", collections: ["best-sellers", "luxury-collection"] },
-    { name: "Marble Sculpture Vase", sku: "DEC-MAR-007", brand: "Studio Noir", category: "Home Décor", room: "Living Room", price: 14900, cost: 6000, stock: 124, max: 150, rating: 5, reviews: 96, sales: 98, badges: ["LATEST", "AUSTRALIAN_MADE"], image: "1578500494198-246f612d3b3d", material: "Solid marble", colour: "Carrara white", style: "Minimalist", desc: "Carved from solid marble, each vase carries its own unique veining. A quiet statement on any console.", collections: ["new-arrivals", "hamptons-collection"] },
-    { name: "Alabaster Table Lamp", sku: "LGT-ALA-022", brand: "Lumière Co.", category: "Lighting", room: "Bedroom", price: 25900, cost: 11000, stock: 0, max: 50, rating: 5, reviews: 312, sales: 312, badges: ["LATEST", "STAFF_PICK"], image: "1507473885765-e6ed057f782c", material: "Alabaster, brass", colour: "Ivory", style: "Modern", desc: "Translucent alabaster casts a soft, golden light — a warm glow for bedside or console.", collections: ["premium-lighting", "new-arrivals", "sculptural-lighting"] },
-    { name: "Hand-Knotted Wool Rug", sku: "SFT-WOL-031", brand: "Terra Living", category: "Soft Furnishings", room: "Living Room", price: 64900, cost: 30000, stock: 32, max: 45, rating: 5, reviews: 203, sales: 203, badges: ["PREMIUM"], image: "1600166898405-da9535204843", material: "New Zealand wool", colour: "Sand", style: "Hamptons", desc: "Hand-knotted from New Zealand wool. Dense, plush and built to last a generation.", collections: ["best-sellers", "luxury-collection"] },
-    { name: "Ceramic Candle Trio", sku: "FRG-CAN-005", brand: "Aura", category: "Fragrance", room: "Living Room", price: 7900, cost: 3000, stock: 210, max: 250, rating: 4, reviews: 74, sales: 420, badges: ["GIFT_IDEA", "ECO"], image: "1603006905003-be475563bc59", material: "Ceramic, soy wax", colour: "Cream", style: "Coastal", desc: "Three hand-poured soy candles in signature scents. Beautifully boxed — ready to gift.", collections: ["gifts-under-100", "best-sellers"] },
-    { name: "Gilded Wall Mirror", sku: "DEC-MIR-019", brand: "Studio Noir", category: "Home Décor", room: "Entry", price: 42900, compare: 52000, cost: 19000, stock: 14, max: 60, rating: 5, reviews: 88, sales: 74, badges: ["ON_SALE"], image: "1618220179428-22790b461013", material: "Gilded metal, glass", colour: "Gold", style: "Classic", desc: "An elegant gilded frame that adds light and depth to any room. Arrives ready to hang.", collections: ["luxury-collection"] },
-    { name: "Linen Throw Blanket", sku: "SFT-LIN-027", brand: "Terra Living", category: "Soft Furnishings", room: "Bedroom", price: 11900, cost: 4500, stock: 9, max: 80, rating: 5, reviews: 140, sales: 140, badges: ["LIMITED"], image: "1584100936595-c0654b55a2e2", material: "Pure linen", colour: "Oatmeal", style: "Coastal", desc: "Stonewashed pure linen that softens with every wash. A quiet luxury for the bed or sofa.", collections: ["gifts-under-100"] },
-    { name: "Étoile Chandelier", sku: "LGT-ETO-040", brand: "Lumière Co.", category: "Lighting", room: "Dining", price: 129000, cost: 60000, stock: 12, max: 30, rating: 5, reviews: 41, sales: 40, badges: ["PREMIUM", "LUXURY"], image: "1513506003901-1e6a229e2d15", material: "Brass, hand-blown glass", colour: "Champagne", style: "Contemporary", desc: "A constellation of hand-blown glass globes on a brushed brass frame.", collections: ["premium-lighting", "sculptural-lighting", "luxury-collection"] },
-    { name: "Noir Diffuser Set", sku: "FRG-DIF-011", brand: "Aura", category: "Fragrance", room: "Bathroom", price: 8900, cost: 3400, stock: 64, max: 120, rating: 5, reviews: 52, sales: 60, badges: ["GIFT_IDEA"], image: "1603006905003-be475563bc59", material: "Glass, reeds", colour: "Smoke", style: "Minimalist", desc: "A slow-release reed diffuser in our signature noir scent. Up to 12 weeks of fragrance.", collections: ["gifts-under-100"] },
-    { name: "Coastal Linen Cushion", sku: "SFT-CUS-018", brand: "Terra Living", category: "Soft Furnishings", room: "Bedroom", price: 5900, cost: 2200, stock: 130, max: 200, rating: 5, reviews: 64, sales: 90, badges: ["LATEST"], image: "1584100936595-c0654b55a2e2", material: "Linen, feather", colour: "Sea mist", style: "Coastal", desc: "A plump feather-filled cushion in washed linen. Layer for relaxed coastal ease.", collections: ["hamptons-collection", "gifts-under-100", "new-arrivals"] },
-    { name: "Sculpted Floor Lamp", sku: "LGT-FLR-028", brand: "Maison Atelier", category: "Lighting", room: "Living Room", price: 54900, cost: 25000, stock: 18, max: 40, rating: 4, reviews: 70, sales: 70, badges: ["STAFF_PICK"], image: "1507473885765-e6ed057f782c", material: "Marble, brass", colour: "Onyx", style: "Modern", desc: "A sculptural arc on a solid marble base — equal parts lighting and art.", collections: ["premium-lighting", "sculptural-lighting"] },
+    { name: "Marble Sculpture Vase", sku: "DEC-MAR-007", brand: "Studio Noir", category: "Vases & Ginger Jars", room: "Living Room", price: 14900, cost: 6000, stock: 124, max: 150, rating: 5, reviews: 96, sales: 98, badges: ["LATEST", "AUSTRALIAN_MADE"], image: "1578500494198-246f612d3b3d", material: "Solid marble", colour: "Carrara white", style: "Minimalist", desc: "Carved from solid marble, each vase carries its own unique veining. A quiet statement on any console.", collections: ["new-arrivals", "hamptons-collection"] },
+    { name: "Alabaster Table Lamp", sku: "LGT-ALA-022", brand: "Lumière Co.", category: "Lamps & Lighting Décor", room: "Bedroom", price: 25900, cost: 11000, stock: 0, max: 50, rating: 5, reviews: 312, sales: 312, badges: ["LATEST", "STAFF_PICK"], image: "1507473885765-e6ed057f782c", material: "Alabaster, brass", colour: "Ivory", style: "Modern", desc: "Translucent alabaster casts a soft, golden light — a warm glow for bedside or console.", collections: ["premium-lighting", "new-arrivals", "sculptural-lighting"] },
+    { name: "Hand-Knotted Wool Rug", sku: "SFT-WOL-031", brand: "Terra Living", category: "Cushions & Soft Décor", room: "Living Room", price: 64900, cost: 30000, stock: 32, max: 45, rating: 5, reviews: 203, sales: 203, badges: ["PREMIUM"], image: "1600166898405-da9535204843", material: "New Zealand wool", colour: "Sand", style: "Hamptons", desc: "Hand-knotted from New Zealand wool. Dense, plush and built to last a generation.", collections: ["best-sellers", "luxury-collection"] },
+    { name: "Ceramic Candle Trio", sku: "FRG-CAN-005", brand: "Aura", category: "Candle Holders", room: "Living Room", price: 7900, cost: 3000, stock: 210, max: 250, rating: 4, reviews: 74, sales: 420, badges: ["GIFT_IDEA", "ECO"], image: "1603006905003-be475563bc59", material: "Ceramic, soy wax", colour: "Cream", style: "Coastal", desc: "Three hand-poured soy candles in signature scents. Beautifully boxed — ready to gift.", collections: ["gifts-under-100", "best-sellers"] },
+    { name: "Gilded Wall Mirror", sku: "DEC-MIR-019", brand: "Studio Noir", category: "Mirrors", room: "Entry", price: 42900, compare: 52000, cost: 19000, stock: 14, max: 60, rating: 5, reviews: 88, sales: 74, badges: ["ON_SALE"], image: "1618220179428-22790b461013", material: "Gilded metal, glass", colour: "Gold", style: "Classic", desc: "An elegant gilded frame that adds light and depth to any room. Arrives ready to hang.", collections: ["luxury-collection"] },
+    { name: "Linen Throw Blanket", sku: "SFT-LIN-027", brand: "Terra Living", category: "Cushions & Soft Décor", room: "Bedroom", price: 11900, cost: 4500, stock: 9, max: 80, rating: 5, reviews: 140, sales: 140, badges: ["LIMITED"], image: "1584100936595-c0654b55a2e2", material: "Pure linen", colour: "Oatmeal", style: "Coastal", desc: "Stonewashed pure linen that softens with every wash. A quiet luxury for the bed or sofa.", collections: ["gifts-under-100"] },
+    { name: "Étoile Chandelier", sku: "LGT-ETO-040", brand: "Lumière Co.", category: "Lamps & Lighting Décor", room: "Dining", price: 129000, cost: 60000, stock: 12, max: 30, rating: 5, reviews: 41, sales: 40, badges: ["PREMIUM", "LUXURY"], image: "1513506003901-1e6a229e2d15", material: "Brass, hand-blown glass", colour: "Champagne", style: "Contemporary", desc: "A constellation of hand-blown glass globes on a brushed brass frame.", collections: ["premium-lighting", "sculptural-lighting", "luxury-collection"] },
+    { name: "Noir Diffuser Set", sku: "FRG-DIF-011", brand: "Aura", category: "Gift & Décor Items", room: "Bathroom", price: 8900, cost: 3400, stock: 64, max: 120, rating: 5, reviews: 52, sales: 60, badges: ["GIFT_IDEA"], image: "1603006905003-be475563bc59", material: "Glass, reeds", colour: "Smoke", style: "Minimalist", desc: "A slow-release reed diffuser in our signature noir scent. Up to 12 weeks of fragrance.", collections: ["gifts-under-100"] },
+    { name: "Coastal Linen Cushion", sku: "SFT-CUS-018", brand: "Terra Living", category: "Cushions & Soft Décor", room: "Bedroom", price: 5900, cost: 2200, stock: 130, max: 200, rating: 5, reviews: 64, sales: 90, badges: ["LATEST"], image: "1584100936595-c0654b55a2e2", material: "Linen, feather", colour: "Sea mist", style: "Coastal", desc: "A plump feather-filled cushion in washed linen. Layer for relaxed coastal ease.", collections: ["hamptons-collection", "gifts-under-100", "new-arrivals"] },
+    { name: "Sculpted Floor Lamp", sku: "LGT-FLR-028", brand: "Maison Atelier", category: "Lamps & Lighting Décor", room: "Living Room", price: 54900, cost: 25000, stock: 18, max: 40, rating: 4, reviews: 70, sales: 70, badges: ["STAFF_PICK"], image: "1507473885765-e6ed057f782c", material: "Marble, brass", colour: "Onyx", style: "Modern", desc: "A sculptural arc on a solid marble base — equal parts lighting and art.", collections: ["premium-lighting", "sculptural-lighting"] },
+
+    // ── Sample products for the remaining categories ──────────────────────
+    { name: "Oak Console Table", sku: "FRN-CON-101", brand: "Maison Atelier", category: "Furniture", room: "Living Room", price: 74900, cost: 32000, stock: 20, max: 40, rating: 5, reviews: 42, sales: 42, badges: ["LATEST"], image: "1567538096630-e0c55bd6374c", material: "Solid oak", colour: "Natural oak", style: "Contemporary", desc: "A slim solid-oak console with clean lines — perfect for entryways and hallways.", collections: ["new-arrivals"] },
+    { name: "Round Antique Mirror", sku: "MIR-RND-102", brand: "Studio Noir", category: "Mirrors", room: "Entry", price: 21900, cost: 9000, stock: 35, max: 60, rating: 5, reviews: 58, sales: 58, badges: ["BEST_SELLER"], image: "1618220179428-22790b461013", material: "Antiqued glass, metal", colour: "Aged brass", style: "Classic", desc: "A round mirror with an aged-brass frame that adds warmth and light to any wall.", collections: ["best-sellers"] },
+    { name: "Golden Leaf Metal Wall Art", sku: "WAL-LEF-103", brand: "Studio Noir", category: "Wall Art & Décor", room: "Living Room", price: 18900, cost: 7500, stock: 44, max: 80, rating: 5, reviews: 33, sales: 33, badges: ["LATEST"], image: "1586023492125-27b2c045efd7", material: "Powder-coated metal", colour: "Gold", style: "Modern", desc: "Hand-shaped golden leaves form a sculptural metal wall installation.", collections: ["new-arrivals"] },
+    { name: "Abstract Brass Wall Panel", sku: "WAL-ABS-104", brand: "Maison Atelier", category: "Wall Art & Décor", room: "Dining", price: 26900, cost: 11000, stock: 22, max: 50, rating: 5, reviews: 19, sales: 19, badges: ["LUXURY"], image: "1586023492125-27b2c045efd7", material: "Brass", colour: "Brushed brass", style: "Contemporary", desc: "An abstract brushed-brass panel that catches the light beautifully.", collections: ["luxury-collection"] },
+    { name: "Meditating Buddha Statue", sku: "STA-BUD-105", brand: "Terra Living", category: "Statues & Figurines", room: "Living Room", price: 15900, cost: 6000, stock: 60, max: 100, rating: 5, reviews: 120, sales: 120, badges: ["BEST_SELLER"], image: "1578500494198-246f612d3b3d", material: "Polyresin", colour: "Stone grey", style: "Zen", desc: "A serene meditating Buddha, hand-finished in a natural stone tone.", collections: ["best-sellers"] },
+    { name: "Golden Ganesh Figurine", sku: "STA-GAN-106", brand: "Studio Noir", category: "Statues & Figurines", room: "Entry", price: 12900, cost: 5000, stock: 48, max: 90, rating: 5, reviews: 64, sales: 64, badges: ["GIFT_IDEA"], image: "1578500494198-246f612d3b3d", material: "Polyresin, gold leaf", colour: "Gold", style: "Traditional", desc: "An intricately detailed Ganesh figurine with a gilded finish.", collections: ["gifts-under-100"] },
+    { name: "Artificial Ficus Tree 1.5m", sku: "PLN-FIC-107", brand: "Terra Living", category: "Artificial Plants & Planters", room: "Living Room", price: 19900, cost: 8000, stock: 30, max: 60, rating: 4, reviews: 41, sales: 41, badges: ["LATEST"], image: "1586023492125-27b2c045efd7", material: "Silk, polyester", colour: "Green", style: "Natural", desc: "A lifelike 1.5m ficus that brings greenery indoors with zero upkeep.", collections: ["new-arrivals"] },
+    { name: "Monstera in Ceramic Planter", sku: "PLN-MON-108", brand: "Terra Living", category: "Artificial Plants & Planters", room: "Living Room", price: 13900, cost: 5200, stock: 52, max: 90, rating: 5, reviews: 28, sales: 28, badges: [], image: "1586023492125-27b2c045efd7", material: "Silk, ceramic", colour: "Green / white", style: "Natural", desc: "A full artificial monstera set in a matte ceramic planter.", collections: ["new-arrivals"] },
+    { name: "Gold Ceramic Ginger Jar", sku: "VAS-GNG-109", brand: "Studio Noir", category: "Vases & Ginger Jars", room: "Dining", price: 9900, cost: 3800, stock: 70, max: 120, rating: 5, reviews: 47, sales: 47, badges: ["BEST_SELLER"], image: "1578500494198-246f612d3b3d", material: "Ceramic", colour: "Gold", style: "Classic", desc: "A lidded ginger jar with a lustrous gold glaze.", collections: ["best-sellers"] },
+    { name: "Brass Taper Candle Holders (Set of 3)", sku: "CND-BRS-110", brand: "Aura", category: "Candle Holders", room: "Dining", price: 6900, cost: 2600, stock: 90, max: 160, rating: 5, reviews: 55, sales: 88, badges: ["GIFT_IDEA"], image: "1603006905003-be475563bc59", material: "Brass", colour: "Antique brass", style: "Modern", desc: "A trio of graduated brass taper holders for an elegant table.", collections: ["gifts-under-100"] },
+    { name: "Round Gold Serving Tray", sku: "TRY-GLD-111", brand: "Studio Noir", category: "Trays & Home Accessories", room: "Living Room", price: 7900, cost: 3000, stock: 80, max: 140, rating: 5, reviews: 36, sales: 36, badges: ["LATEST"], image: "1600166898405-da9535204843", material: "Metal, glass", colour: "Gold", style: "Modern", desc: "A round mirrored-base tray to corral candles, glasses and décor.", collections: ["new-arrivals"] },
+    { name: "Marble & Brass Storage Box", sku: "TRY-BOX-112", brand: "Maison Atelier", category: "Trays & Home Accessories", room: "Bedroom", price: 8900, cost: 3400, stock: 55, max: 100, rating: 5, reviews: 22, sales: 22, badges: [], image: "1600166898405-da9535204843", material: "Marble, brass", colour: "White / brass", style: "Minimalist", desc: "A lidded marble box with brass trim for jewellery or keepsakes.", collections: ["luxury-collection"] },
+    { name: "Buddha Cascade Water Fountain", sku: "WTR-BUD-113", brand: "Terra Living", category: "Water Features", room: "Living Room", price: 24900, cost: 10000, stock: 18, max: 40, rating: 5, reviews: 31, sales: 31, badges: ["BEST_SELLER"], image: "1578500494198-246f612d3b3d", material: "Polyresin, LED", colour: "Stone", style: "Zen", desc: "A calming indoor Buddha fountain with a gentle cascading flow and soft LED glow.", collections: ["best-sellers"] },
+    { name: "LED Cascading Bowl Fountain", sku: "WTR-LED-114", brand: "Terra Living", category: "Water Features", room: "Outdoor", price: 29900, cost: 12000, stock: 12, max: 30, rating: 4, reviews: 15, sales: 15, badges: ["LATEST"], image: "1586023492125-27b2c045efd7", material: "Polyresin, LED", colour: "Charcoal", style: "Contemporary", desc: "Tiered bowls with a soft LED-lit cascade — a centrepiece for patio or foyer.", collections: ["new-arrivals"] },
+    { name: "Mini Brass Deer Figurine", sku: "GFT-DER-115", brand: "Aura", category: "Gift & Décor Items", room: "Living Room", price: 3900, cost: 1400, stock: 120, max: 200, rating: 5, reviews: 40, sales: 60, badges: ["GIFT_IDEA"], image: "1549465220-1a8b9238cd48", material: "Brass", colour: "Gold", style: "Modern", desc: "A pocket-sized brass deer — the perfect desk or shelf accent gift.", collections: ["gifts-under-100"] },
   ];
 
   const productIds: Record<string, string> = {};

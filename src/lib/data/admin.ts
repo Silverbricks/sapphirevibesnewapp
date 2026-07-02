@@ -146,7 +146,13 @@ export async function getAdminCategories() {
   return db.category.findMany({
     where: { parentId: null },
     orderBy: { displayOrder: "asc" },
-    include: { children: { select: { name: true } }, _count: { select: { products: true } } },
+    include: {
+      children: {
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        include: { _count: { select: { products: true } } },
+      },
+      _count: { select: { products: true } },
+    },
   });
 }
 

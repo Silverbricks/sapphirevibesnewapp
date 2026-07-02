@@ -10,12 +10,12 @@ export default async function LightingPage({
   searchParams: Promise<{ sort?: string }>;
 }) {
   const { sort } = await searchParams;
-  const products = await getProducts({ categorySlug: "lighting", sort: parseSort(sort) });
+  const products = await getProducts({ categorySlug: "lamps-lighting", sort: parseSort(sort) });
   return (
     <Listing
       eyebrow="Signature Series"
-      title="Lighting"
-      subtitle="Hand-finished chandeliers, pendants and lamps in brass, alabaster and glass."
+      title="Lamps & Lighting"
+      subtitle="Decorative lamps, lanterns and wall lights in brass, alabaster and glass."
       products={products}
     />
   );
