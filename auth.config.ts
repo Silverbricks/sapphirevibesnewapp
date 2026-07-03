@@ -44,6 +44,7 @@ export const authConfig = {
 
       if (path.startsWith("/account")) return isLoggedIn;
       if (path.startsWith("/admin")) return isStaff;
+      if (path.startsWith("/print")) return isStaff;
       if (path.startsWith("/growth"))
         return role === "MARKETING_MANAGER" || role === "SUPER_ADMIN";
       return true;

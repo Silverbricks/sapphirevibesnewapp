@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, isStaffRole } from "@/lib/auth-helpers";
+import { getOrders } from "@/lib/data/orders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,8 @@ export async function GET(req: Request) {
   if (!isStaffRole(session?.user?.role)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const type = new URL(req.url).searchParams.get("type") ?? "orders";
+  const sp = new URL(req.url).searchParams;
+  const type = sp.get("type") ?? "orders";
 
   let csv = "";
   let filename = "export.csv";
@@ -34,13 +36,21 @@ export async function GET(req: Request) {
     );
     filename = "products.csv";
   } else {
-    const orders = await db.order.findMany({
-      orderBy: { placedAt: "desc" },
-      select: { number: true, status: true, totalCents: true, guestEmail: true, user: { select: { email: true } }, placedAt: true, _count: { select: { items: true } } },
+    // honor the same filters as the orders list
+    const { orders } = await getOrders({
+      status: sp.get("status") ?? "all",
+      q: sp.get("q") ?? undefined,
+      paymentMethod: sp.get("paymentMethod") ?? undefined,
+      shippingMethod: sp.get("shippingMethod") ?? undefined,
+      state: sp.get("state") ?? undefined,
+      country: sp.get("country") ?? undefined,
+      dateFrom: sp.get("dateFrom") ?? undefined,
+      dateTo: sp.get("dateTo") ?? undefined,
+      perPage: 10000,
     });
     csv = toCsv(
-      ["Order", "Status", "Total", "Customer Email", "Items", "Date"],
-      orders.map((o) => [o.number, o.status, (o.totalCents / 100).toFixed(2), o.user?.email ?? o.guestEmail ?? "", o._count.items, o.placedAt.toISOString()]),
+      ["Order", "Status", "Payment", "Total", "Customer", "Email", "Items", "Date"],
+      orders.map((o) => [o.number, o.status, o.paymentStatus, (o.totalCents / 100).toFixed(2), o.customerName, o.user?.email ?? o.guestEmail ?? "", o._count.items, o.placedAt.toISOString()]),
     );
     filename = "orders.csv";
   }

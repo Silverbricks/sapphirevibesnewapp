@@ -4,6 +4,7 @@ export { Card, Panel, PanelHead } from "./Card";
 export {
   Pill,
   OrderStatusPill,
+  PaymentStatusPill,
   ProductBadgeChip,
   SoldOutChip,
 } from "./Badge";

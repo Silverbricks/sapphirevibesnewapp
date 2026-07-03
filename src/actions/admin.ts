@@ -221,17 +221,7 @@ export async function createCoupon(formData: FormData) {
   revalidatePath("/growth/coupons");
 }
 
-export async function updateOrderStatus(orderId: string, status: string) {
-  const staff = await requireStaff();
-  const order = await db.order.update({
-    where: { id: orderId },
-    data: { status: status as OrderStatus },
-  });
-  await db.auditLog.create({ data: { actorName: staff.name, action: "Updated order status", targetType: "Order", targetId: order.number, meta: { status } } });
-  revalidatePath("/admin/orders");
-  revalidatePath(`/admin/orders/${order.number}`);
-  return { ok: true as const };
-}
+// Order actions live in src/actions/orders.ts (updateOrderStatus, etc.)
 
 export async function addHeroSlide(formData: FormData) {
   const staff = await requireStaff();

@@ -249,21 +249,51 @@ async function main() {
   ) {
     const items = lines.map((l) => {
       const p = products.find((x) => x.sku === l.sku)!;
-      return { sku: l.sku, name: p.name, image: img(p.image, 200), unit: p.price, qty: l.qty, line: p.price * l.qty };
+      return { sku: l.sku, name: p.name, image: img(p.image, 200), unit: p.price, qty: l.qty, line: p.price * l.qty, colour: p.colour };
     });
     const subtotal = items.reduce((s, i) => s + i.line, 0);
     const shipping = subtotal >= 25000 ? 0 : 995;
     const tax = Math.round(subtotal * GST);
     const total = subtotal + shipping + tax;
-    await db.order.create({
+    const rank: Record<string, number> = { PENDING: 0, PROCESSING: 1, PACKED: 2, READY_FOR_DISPATCH: 3, SHIPPED: 4, IN_TRANSIT: 5, OUT_FOR_DELIVERY: 6, DELIVERED: 7 };
+    const r = rank[opts.status] ?? 0;
+    const placed = d(opts.placedAt);
+    const LOCS = [
+      { city: "Sydney", region: "NSW", postalCode: "2000" },
+      { city: "Melbourne", region: "VIC", postalCode: "3000" },
+      { city: "Brisbane", region: "QLD", postalCode: "4000" },
+      { city: "Point Cook", region: "VIC", postalCode: "3030" },
+    ];
+    const loc = LOCS[Number(number.slice(-1)) % LOCS.length];
+    const snapshot = { fullName: user?.name ?? "Guest", line1: "15 Example Street", line2: null, city: loc.city, region: loc.region, postalCode: loc.postalCode, country: "Australia", phone: null, instructions: "Leave at front door" };
+    const order = await db.order.create({
       data: {
         number, userId: user?.id ?? null, guestEmail: opts.guestEmail ?? null,
         customerName: user?.name ?? "Guest", status: opts.status as never, paymentStatus: "PAID",
         paymentMethod: opts.method as never, subtotalCents: subtotal, shippingCents: shipping, taxCents: tax, totalCents: total,
-        trackingNumber: opts.tracking ?? null, carrier: opts.carrier ?? null, shippingMethod: shipping === 0 ? "Free Express Shipping" : "Standard Shipping",
-        placedAt: d(opts.placedAt),
-        items: { create: items.map((i) => ({ productId: productIds[i.sku], nameSnapshot: i.name, skuSnapshot: i.sku, imageSnapshot: i.image, unitCents: i.unit, quantity: i.qty, lineCents: i.line })) },
+        invoiceNumber: `INV-${number.replace(/\D/g, "")}`,
+        trackingNumber: opts.tracking ?? null, carrier: opts.carrier ?? null,
+        trackingUrl: opts.tracking ? `https://auspost.com.au/mypost/track/#/details/${opts.tracking}` : null,
+        assignedToName: r >= 2 ? "Noah Pike" : null,
+        dispatchedAt: r >= 4 ? placed : null,
+        deliveredAt: r >= 7 ? placed : null,
+        shippingMethod: shipping === 0 ? "Free Express Shipping" : "Standard Shipping",
+        shippingSnapshot: snapshot,
+        billingSameAsShipping: true,
+        placedAt: placed,
+        items: { create: items.map((i) => ({ productId: productIds[i.sku], nameSnapshot: i.name, skuSnapshot: i.sku, imageSnapshot: i.image, colour: i.colour, unitCents: i.unit, quantity: i.qty, lineCents: i.line })) },
       },
+    });
+    const ev: { kind: string; label: string; staffName?: string }[] = [
+      { kind: "SYSTEM", label: "Order placed" },
+      { kind: "SYSTEM", label: "Payment received" },
+    ];
+    if (r >= 1) ev.push({ kind: "STATUS", label: "Processing started", staffName: "Sofia Green" });
+    if (r >= 2) ev.push({ kind: "STATUS", label: "Order packed", staffName: "Noah Pike" });
+    if (r >= 4) ev.push({ kind: "STATUS", label: `Dispatched via ${opts.carrier ?? "courier"}`, staffName: "Noah Pike" });
+    if (r >= 7) ev.push({ kind: "STATUS", label: "Delivered to customer", staffName: "System" });
+    await db.orderEvent.createMany({
+      data: ev.map((e, idx) => ({ orderId: order.id, kind: e.kind, label: e.label, staffName: e.staffName ?? null, createdAt: new Date(placed.getTime() + idx * 3600_000) })),
     });
   }
 
@@ -277,6 +307,20 @@ async function main() {
   // Amelia's earlier orders (account history)
   await makeOrder("SV-10455", amelia, [{ sku: "FRN-VEL-014", qty: 1 }], { status: "SHIPPED", payment: "VISA", method: "VISA", placedAt: "2026-06-18", tracking: "AP1029384756AU", carrier: "Australia Post Express" });
   await makeOrder("SV-10398", amelia, [{ sku: "SFT-WOL-031", qty: 1 }, { sku: "DEC-MIR-019", qty: 1 }], { status: "DELIVERED", payment: "VISA", method: "VISA", placedAt: "2026-06-02" });
+
+  // Demo return (RMA) against a delivered order
+  const retOrder = await db.order.findUnique({ where: { number: "SV-10478" } });
+  if (retOrder) {
+    await db.return.create({
+      data: {
+        number: "RMA-1001", orderId: retOrder.id, status: "REQUESTED", reason: "Changed mind",
+        items: [{ sku: "FRG-CAN-005", name: "Ceramic Candle Trio", qty: 1 }],
+        refundCents: 7900, notes: "Customer requested return of one candle set.",
+        createdAt: d("2026-06-26"),
+      },
+    });
+    await db.orderEvent.create({ data: { orderId: retOrder.id, kind: "RETURN", label: "Return requested (RMA-1001)", body: "Changed mind — 1× Ceramic Candle Trio", staffName: "Ivy Lane", createdAt: d("2026-06-26") } });
+  }
 
   // ── Reviews, photos, Q&A, testimonials ─────────────────────────────────
   const rugReview = await db.review.create({ data: { productId: productIds["SFT-WOL-031"], userId: amelia.id, authorName: "Amelia R.", rating: 5, title: "A generational piece", body: "Stunning centrepiece for our living room — the wool is thick and the colours are even richer in person. Worth every dollar.", status: "PUBLISHED", helpfulCount: 12, isFeatured: true, createdAt: d("2026-06-05") } });

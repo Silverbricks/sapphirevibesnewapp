@@ -156,3 +156,10 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(200, 164, 92, 0.3);
 }
+
+/* printable documents render on white paper */
+@media print {
+  body {
+    background: #fff !important;
+  }
+}

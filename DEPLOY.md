@@ -235,7 +235,22 @@ ANTHROPIC_API_KEY="sk-ant-..."
 
 # Secret guarding the scheduled-publishing cron endpoint (see below).
 CRON_SECRET="<any long random string>"
+
+# Order emails (invoices + tracking) via Resend. Optional — the buttons show a
+# clear "not configured" message until these are set.
+RESEND_API_KEY="re_..."
+EMAIL_FROM="Sapphire Vibes <orders@yourdomain.com>"
+
+# Optional order SMS via Twilio.
+TWILIO_ACCOUNT_SID=""
+TWILIO_AUTH_TOKEN=""
+TWILIO_FROM=""
 ```
+
+The enterprise **Order Management** upgrade adds a migration (`20260702_orders_oms`) — the standard
+`npx prisma migrate deploy` step below applies it (new order/return columns + timeline table). No reseed
+is required; re-seeding only refreshes the demo timeline/returns. Order documents (invoice, packing slip,
+labels, dispatch list) are print-to-PDF pages — they need no configuration.
 
 After editing `.env`, reload env into the running process: `pm2 restart sapphire --update-env`.
 

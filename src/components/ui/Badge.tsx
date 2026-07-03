@@ -44,16 +44,34 @@ export function Pill({
 
 /** Map an order status to a pill colour + readable label. */
 const ORDER_STATUS: Record<string, { color: PillColor; label: string }> = {
-  PENDING: { color: "amber", label: "Pending" },
+  PENDING: { color: "amber", label: "New" },
   PROCESSING: { color: "amber", label: "Processing" },
   PACKED: { color: "blue", label: "Packed" },
+  READY_FOR_DISPATCH: { color: "blue", label: "Ready for Dispatch" },
   SHIPPED: { color: "blue", label: "Shipped" },
   IN_TRANSIT: { color: "blue", label: "In Transit" },
+  OUT_FOR_DELIVERY: { color: "purple", label: "Out for Delivery" },
   DELIVERED: { color: "green", label: "Delivered" },
+  ON_HOLD: { color: "amber", label: "On Hold" },
   CANCELLED: { color: "red", label: "Cancelled" },
   RETURNED: { color: "red", label: "Returned" },
   REFUNDED: { color: "grey", label: "Refunded" },
 };
+
+// payment status pills reuse the same map where names overlap
+const PAYMENT_STATUS: Record<string, { color: PillColor; label: string }> = {
+  UNPAID: { color: "amber", label: "Unpaid" },
+  AUTHORIZED: { color: "blue", label: "Authorized" },
+  PAID: { color: "green", label: "Paid" },
+  FAILED: { color: "red", label: "Failed" },
+  PARTIALLY_REFUNDED: { color: "amber", label: "Part. Refunded" },
+  REFUNDED: { color: "grey", label: "Refunded" },
+};
+
+export function PaymentStatusPill({ status }: { status: string }) {
+  const meta = PAYMENT_STATUS[status] ?? { color: "grey" as PillColor, label: status };
+  return <Pill color={meta.color}>{meta.label}</Pill>;
+}
 
 export function OrderStatusPill({ status }: { status: string }) {
   const meta = ORDER_STATUS[status] ?? { color: "grey" as PillColor, label: status };

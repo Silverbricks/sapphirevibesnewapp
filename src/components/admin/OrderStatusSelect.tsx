@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateOrderStatus } from "@/actions/admin";
+import { toast } from "sonner";
+import { updateOrderStatus } from "@/actions/orders";
 
-const STATUSES = [
-  "PENDING", "PROCESSING", "PACKED", "SHIPPED", "IN_TRANSIT",
-  "DELIVERED", "CANCELLED", "RETURNED", "REFUNDED",
+export const ORDER_STATUSES = [
+  "PENDING", "PROCESSING", "PACKED", "READY_FOR_DISPATCH", "SHIPPED", "IN_TRANSIT",
+  "OUT_FOR_DELIVERY", "DELIVERED", "ON_HOLD", "CANCELLED", "RETURNED", "REFUNDED",
 ];
+const STATUSES = ORDER_STATUSES;
 
 export function OrderStatusSelect({ orderId, current }: { orderId: string; current: string }) {
   const [value, setValue] = useState(current);
@@ -23,6 +25,7 @@ export function OrderStatusSelect({ orderId, current }: { orderId: string; curre
         setValue(next);
         startTransition(async () => {
           await updateOrderStatus(orderId, next);
+          toast.success(`Status → ${next.charAt(0) + next.slice(1).toLowerCase().replace(/_/g, " ")}`);
           router.refresh();
         });
       }}

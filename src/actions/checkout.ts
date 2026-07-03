@@ -46,7 +46,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
 
   const items: {
     productId: string; nameSnapshot: string; skuSnapshot: string; imageSnapshot: string | null;
-    unitCents: number; quantity: number; lineCents: number;
+    colour: string | null; unitCents: number; quantity: number; lineCents: number;
   }[] = [];
   let subtotal = 0;
   for (const line of input.lines) {
@@ -58,7 +58,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
     subtotal += lineCents;
     items.push({
       productId: p.id, nameSnapshot: p.name, skuSnapshot: p.sku,
-      imageSnapshot: p.images[0]?.url ?? null, unitCents: p.priceCents, quantity: qty, lineCents,
+      imageSnapshot: p.images[0]?.url ?? null, colour: p.colour ?? null, unitCents: p.priceCents, quantity: qty, lineCents,
     });
   }
   if (!items.length) return { error: "None of your items are available." };
@@ -145,13 +145,22 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
         couponId,
         giftCardId,
         shippingMethod: method.label,
+        invoiceNumber: `INV-${number.replace(/\D/g, "")}`,
         giftWrap: !!input.giftWrap,
         orderNotes: input.orderNotes || null,
         shippingSnapshot: {
           fullName: input.fullName, line1: input.line1, line2: input.line2 ?? null,
           city: input.city, region: input.region, postalCode: input.postalCode, country: input.country ?? "Australia",
+          phone: input.phone ?? null,
         },
         items: { create: items },
+        events: {
+          create: [
+            { kind: "SYSTEM", label: "Order placed" },
+            { kind: "SYSTEM", label: "Payment received" },
+            { kind: "STATUS", label: "Processing started" },
+          ],
+        },
       },
     });
 

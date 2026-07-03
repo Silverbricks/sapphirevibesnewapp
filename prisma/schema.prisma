@@ -40,9 +40,12 @@ enum OrderStatus {
   PENDING
   PROCESSING
   PACKED
+  READY_FOR_DISPATCH
   SHIPPED
   IN_TRANSIT
+  OUT_FOR_DELIVERY
   DELIVERED
+  ON_HOLD
   CANCELLED
   RETURNED
   REFUNDED
@@ -53,6 +56,7 @@ enum PaymentStatus {
   AUTHORIZED
   PAID
   FAILED
+  PARTIALLY_REFUNDED
   REFUNDED
 }
 
@@ -208,6 +212,10 @@ model User {
   pointsBalance    Int     @default(0)
   storeCreditCents Int     @default(0)
   phone            String?
+  alternatePhone   String?
+  company          String?
+  abn              String?
+  notes            String? @db.Text
   twoFactorEnabled Boolean @default(false)
   suspended        Boolean @default(false)
   permissions      Json?   // optional granular module allow-list (overrides role defaults)
@@ -406,18 +414,20 @@ model Address {
   id         String      @id @default(cuid())
   userId     String
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type       AddressType @default(HOME)
-  label      String?
-  fullName   String
-  line1      String
-  line2      String?
-  city       String
-  region     String
-  postalCode String
-  country    String      @default("Australia")
-  phone      String?
-  isDefault  Boolean     @default(false)
-  orders     Order[]
+  type         AddressType @default(HOME)
+  label        String?
+  fullName     String
+  company      String?
+  line1        String
+  line2        String?
+  city         String
+  region       String
+  postalCode   String
+  country      String      @default("Australia")
+  phone        String?
+  instructions String?
+  isDefault    Boolean     @default(false)
+  orders       Order[]
 }
 
 model CartItem {
@@ -487,16 +497,44 @@ model Order {
   shippingSnapshot  Json?
   shippingMethod    String?
 
+  // billing (snapshot; billingSameAsShipping true → reuse shipping)
+  billingSnapshot       Json?
+  billingSameAsShipping Boolean @default(true)
+
   giftWrap       Boolean @default(false)
   giftMessage    String?
   orderNotes     String?
-  trackingNumber String?
-  carrier        String?
+  invoiceNumber  String?
+  salesChannel   String? @default("Online")
+
+  // fulfilment / delivery
+  carrier             String?
+  trackingNumber      String?
+  trackingUrl         String?
+  dispatchedAt        DateTime?
+  estimatedDeliveryAt DateTime?
+  deliveredAt         DateTime?
+  proofOfDelivery     String?
+  deliveryNotes       String?
+
+  // staff-only notes { packing, delivery, warehouse, support, refund }
+  internalNotes Json?
+
+  // refunds / lifecycle
+  refundedCents Int       @default(0)
+  refundReason  String?
+  archivedAt    DateTime?
+
+  // warehouse assignment (denormalized — no second User relation)
+  assignedToId   String?
+  assignedToName String?
 
   items        OrderItem[]
   rewardTxns   RewardTransaction[]
   giftCardTxns GiftCardTxn[]
   referrals    Referral[]
+  events       OrderEvent[]
+  returns      Return[]
 
   placedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -515,9 +553,42 @@ model OrderItem {
   nameSnapshot  String
   skuSnapshot   String
   imageSnapshot String?
+  variant       String?
+  colour        String?
+  size          String?
   unitCents     Int
   quantity      Int
+  discountCents Int      @default(0)
   lineCents     Int
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind      String   @default("SYSTEM") // STATUS | NOTE | EMAIL | SMS | CALL | SYSTEM | RETURN
+  label     String
+  body      String?  @db.Text
+  staffName String?
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model Return {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      String   @default("REQUESTED") // REQUESTED | APPROVED | RECEIVED | REFUNDED | REJECTED
+  reason      String?
+  items       Json?
+  refundCents Int      @default(0)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orderId])
 }
 
 // ─────────────────────────────────── Reviews & Q&A ───────────────────────────────────
