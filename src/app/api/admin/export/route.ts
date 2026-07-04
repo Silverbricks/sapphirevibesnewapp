@@ -44,6 +44,7 @@ export async function GET(req: Request) {
       shippingMethod: sp.get("shippingMethod") ?? undefined,
       state: sp.get("state") ?? undefined,
       country: sp.get("country") ?? undefined,
+      customer: sp.get("customer") ?? undefined,
       dateFrom: sp.get("dateFrom") ?? undefined,
       dateTo: sp.get("dateTo") ?? undefined,
       perPage: 10000,

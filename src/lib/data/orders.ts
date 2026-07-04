@@ -52,6 +52,7 @@ export interface OrderFilters {
   shippingMethod?: string;
   state?: string;
   country?: string;
+  customer?: string; // has_email | missing_email | has_mobile | missing_mobile | business | individual | vip | repeat
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -63,6 +64,23 @@ const PER_PAGE = 25;
 export async function getOrders(f: OrderFilters = {}) {
   const where: Prisma.OrderWhereInput = {};
   const and: Prisma.OrderWhereInput[] = [];
+
+  // customer-based filters (contact/segment)
+  switch (f.customer) {
+    case "has_email": and.push({ OR: [{ user: { email: { not: "" } } }, { guestEmail: { not: null } }] }); break;
+    case "missing_email": and.push({ userId: null, guestEmail: null }); break;
+    case "has_mobile": and.push({ user: { phone: { not: null } } }); break;
+    case "missing_mobile": and.push({ OR: [{ userId: null }, { user: { phone: null } }] }); break;
+    case "business": and.push({ user: { OR: [{ company: { not: null } }, { customerType: { in: ["CORPORATE", "TRADE"] } }] } }); break;
+    case "individual": and.push({ user: { customerType: { in: ["RETAIL", "VIP"] } } }); break;
+    case "vip": and.push({ user: { customerType: "VIP" } }); break;
+    case "repeat": {
+      const grouped = await db.order.groupBy({ by: ["userId"], _count: { _all: true }, where: { userId: { not: null } } });
+      const ids = grouped.filter((g) => g._count._all > 1).map((g) => g.userId as string);
+      and.push({ userId: { in: ids.length ? ids : ["__none__"] } });
+      break;
+    }
+  }
 
   // Archived is orthogonal to fulfilment status.
   if (f.status === "ARCHIVED") where.archivedAt = { not: null };
@@ -118,7 +136,7 @@ export async function getOrders(f: OrderFilters = {}) {
       take: perPage,
       include: {
         _count: { select: { items: true } },
-        user: { select: { phone: true, email: true } },
+        user: { select: { id: true, phone: true, email: true, company: true } },
       },
     }),
     db.order.count({ where }),
@@ -145,6 +163,34 @@ export async function getOrderDetail(number: string) {
     },
   });
 }
+
+export async function getCustomerProfile(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, phone: true, alternatePhone: true, company: true, abn: true, notes: true, customerType: true, pointsBalance: true, createdAt: true },
+  });
+  if (!user) return null;
+  const [agg, orders] = await Promise.all([
+    db.order.aggregate({ _sum: { totalCents: true }, _count: { _all: true }, where: { userId, status: { notIn: ["CANCELLED", "REFUNDED"] } } }),
+    db.order.findMany({
+      where: { userId },
+      orderBy: { placedAt: "desc" },
+      take: 6,
+      select: { number: true, totalCents: true, status: true, placedAt: true, shippingSnapshot: true, billingSnapshot: true, billingSameAsShipping: true },
+    }),
+  ]);
+  const latest = orders[0];
+  return {
+    ...user,
+    totalSpendCents: agg._sum.totalCents ?? 0,
+    orderCount: agg._count._all,
+    recentOrders: orders.map((o) => ({ number: o.number, totalCents: o.totalCents, status: o.status, placedAt: o.placedAt })),
+    shipping: (latest?.shippingSnapshot ?? null) as Record<string, string> | null,
+    billing: (latest?.billingSameAsShipping ? latest?.shippingSnapshot : latest?.billingSnapshot ?? null) as Record<string, string> | null,
+  };
+}
+
+export type CustomerProfile = NonNullable<Awaited<ReturnType<typeof getCustomerProfile>>>;
 
 /** Orders ready to pick/pack (for the printable dispatch list). */
 export async function getDispatchList() {

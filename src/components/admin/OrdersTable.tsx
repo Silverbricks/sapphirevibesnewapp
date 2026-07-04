@@ -4,9 +4,10 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye } from "lucide-react";
+import { Eye, Mail, Phone, MessageSquare, Copy } from "lucide-react";
 import { OrderStatusPill, PaymentStatusPill, Select, buttonClasses } from "@/components/ui";
 import { ORDER_STATUSES } from "./OrderStatusSelect";
+import { CustomerProfileDrawer } from "./CustomerProfileDrawer";
 import { bulkOrderAction } from "@/actions/orders";
 import { formatMoney, formatDate } from "@/lib/format";
 
@@ -14,6 +15,7 @@ interface Row {
   id: string;
   number: string;
   customerName: string;
+  guestEmail: string | null;
   totalCents: number;
   paymentMethod: string;
   paymentStatus: string;
@@ -21,7 +23,33 @@ interface Row {
   assignedToName: string | null;
   placedAt: Date | string;
   _count: { items: number };
-  user: { phone: string | null; email: string | null } | null;
+  user: { id: string; phone: string | null; email: string | null; company: string | null } | null;
+}
+
+function copy(text: string, label: string) {
+  navigator.clipboard?.writeText(text);
+  toast(`${label} copied`);
+}
+
+function ContactCell({ email, phone }: { email: string | null; phone: string | null }) {
+  const digits = phone?.replace(/[^\d]/g, "") ?? "";
+  return (
+    <div className="flex flex-col gap-1 text-[12px]">
+      {email ? (
+        <div className="flex items-center gap-1.5">
+          <a href={`mailto:${email}`} className="flex items-center gap-1 text-grey hover:text-gold" title="Send email"><Mail className="h-3.5 w-3.5" /><span className="max-w-[160px] truncate">{email}</span></a>
+          <button onClick={() => copy(email, "Email")} className="text-muted hover:text-gold" title="Copy email"><Copy className="h-3 w-3" /></button>
+        </div>
+      ) : <span className="text-muted">no email</span>}
+      {phone ? (
+        <div className="flex items-center gap-1.5">
+          <a href={`tel:${phone}`} className="flex items-center gap-1 text-grey hover:text-gold" title="Call"><Phone className="h-3.5 w-3.5" />{phone}</a>
+          {digits && <a href={`https://wa.me/${digits}`} target="_blank" rel="noreferrer" className="text-muted hover:text-green" title="WhatsApp"><MessageSquare className="h-3 w-3" /></a>}
+          <button onClick={() => copy(phone, "Phone")} className="text-muted hover:text-gold" title="Copy phone"><Copy className="h-3 w-3" /></button>
+        </div>
+      ) : <span className="text-muted">no mobile</span>}
+    </div>
+  );
 }
 
 const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
@@ -32,6 +60,8 @@ export function OrdersTable({ orders, page, pages, query }: { orders: Row[]; pag
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [action, setAction] = useState("status");
   const [value, setValue] = useState("PROCESSING");
+
+  const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
 
   const allChecked = orders.length > 0 && orders.every((o) => sel.has(o.id));
   const toggleAll = () => setSel(allChecked ? new Set() : new Set(orders.map((o) => o.id)));
@@ -88,8 +118,15 @@ export function OrdersTable({ orders, page, pages, query }: { orders: Row[]; pag
               <tr key={o.id}>
                 <td><input type="checkbox" checked={sel.has(o.id)} onChange={() => toggle(o.id)} className="accent-gold" /></td>
                 <td><Link href={`/admin/orders/${o.number}`} className="font-medium text-gold hover:underline">{o.number}</Link></td>
-                <td>{o.customerName}</td>
-                <td className="text-muted">{o.user?.phone ? `📞 ${o.user.phone}` : "—"}</td>
+                <td>
+                  {o.user?.id ? (
+                    <button onClick={() => setProfile({ id: o.user!.id, name: o.customerName })} className="text-left font-medium text-cream hover:text-gold">{o.customerName}</button>
+                  ) : (
+                    <span>{o.customerName}</span>
+                  )}
+                  {o.user?.company && <div className="text-[11px] text-muted">{o.user.company}</div>}
+                </td>
+                <td><ContactCell email={o.user?.email ?? o.guestEmail} phone={o.user?.phone ?? null} /></td>
                 <td>{o._count.items}</td>
                 <td>{formatMoney(o.totalCents)}</td>
                 <td><div className="flex flex-col gap-1"><span className="text-[11px] text-muted">{label(o.paymentMethod)}</span><PaymentStatusPill status={o.paymentStatus} /></div></td>
@@ -110,6 +147,8 @@ export function OrdersTable({ orders, page, pages, query }: { orders: Row[]; pag
           {page < pages ? <Link href={pageHref(page + 1)} className={buttonClasses("outline", "sm")}>Next →</Link> : <span className={buttonClasses("outline", "sm") + " pointer-events-none opacity-40"}>Next →</span>}
         </div>
       )}
+
+      {profile && <CustomerProfileDrawer userId={profile.id} name={profile.name} onClose={() => setProfile(null)} />}
     </div>
   );
 }

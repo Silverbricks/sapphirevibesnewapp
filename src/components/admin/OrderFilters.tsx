@@ -13,9 +13,17 @@ export interface OrderFilterValues {
   shippingMethod?: string;
   state?: string;
   country?: string;
+  customer?: string;
   dateFrom?: string;
   dateTo?: string;
 }
+
+const CUSTOMER_FILTERS = [
+  { v: "has_email", l: "Has email" }, { v: "missing_email", l: "Missing email" },
+  { v: "has_mobile", l: "Has mobile" }, { v: "missing_mobile", l: "Missing mobile" },
+  { v: "business", l: "Business" }, { v: "individual", l: "Individual" },
+  { v: "repeat", l: "Repeat" }, { v: "vip", l: "VIP" },
+];
 
 /** GET form — carries the active status tab so filtering preserves it. */
 export function OrderFilters({ values }: { values: OrderFilterValues }) {
@@ -40,6 +48,10 @@ export function OrderFilters({ values }: { values: OrderFilterValues }) {
           <option value="">Any country</option>
           <option value="Australia">Australia</option>
           <option value="New Zealand">New Zealand</option>
+        </Select>
+        <Select name="customer" defaultValue={values.customer ?? ""}>
+          <option value="">Any customer</option>
+          {CUSTOMER_FILTERS.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}
         </Select>
         <label className="flex items-center gap-2 text-xs text-muted">From <Input type="date" name="dateFrom" defaultValue={values.dateFrom ?? ""} /></label>
         <label className="flex items-center gap-2 text-xs text-muted">To <Input type="date" name="dateTo" defaultValue={values.dateTo ?? ""} /></label>

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getProductForEdit } from "@/lib/data/admin";
 import { saveProduct } from "@/actions/admin";
 import { Button, Input, Textarea, Select, FormField, Panel, buttonClasses } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
+import { ProductImageManager } from "@/components/admin/product-images/ProductImageManager";
 import { ALL_BADGES, BADGE_META } from "@/lib/badges";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +27,12 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
     <>
       <PageHead title={isNew ? "New Product" : "Edit Product"} subtitle={isNew ? "Add a product to the catalogue." : product?.sku} />
       <Link href="/admin/products" className="mb-4 inline-block text-xs uppercase tracking-[0.12em] text-gold">← All products</Link>
+
+      {!isNew && product && (
+        <div className="mb-[18px] max-w-3xl">
+          <ProductImageManager productId={product.id} images={product.images} />
+        </div>
+      )}
 
       <form action={saveProduct} className="max-w-3xl space-y-[18px]">
         {!isNew && <input type="hidden" name="id" value={product!.id} />}
@@ -89,22 +95,23 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
 
         <Panel>
           <h3 className="mb-4 font-serif text-xl">Media</h3>
-          <FormField label="Upload Featured Image">
-            <input
-              type="file"
-              name="imageFile"
-              accept="image/*"
-              className="block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold-soft"
-            />
-          </FormField>
-          <FormField label="…or paste an image URL">
-            <Input name="imageUrl" placeholder="https://images.unsplash.com/..." />
-          </FormField>
-          {product?.images[0] && (
-            <div className="mb-4">
-              <div className="mb-1.5 text-[11px] uppercase tracking-[0.12em] text-muted">Current image</div>
-              <Image src={product.images[0].url} alt={product.name} width={80} height={80} className="h-20 w-20 rounded-lg object-cover" />
-            </div>
+          {isNew ? (
+            <>
+              <FormField label="Cover Image">
+                <input
+                  type="file"
+                  name="imageFile"
+                  accept="image/*"
+                  className="block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold-soft"
+                />
+              </FormField>
+              <FormField label="…or paste an image URL">
+                <Input name="imageUrl" placeholder="https://images.unsplash.com/..." />
+              </FormField>
+              <p className="mb-4 text-xs text-muted">Save the product first, then manage the full image gallery (drag-reorder, crop, SEO, AI alt-text).</p>
+            </>
+          ) : (
+            <p className="mb-4 text-xs text-muted">Manage product images in the <span className="text-gold">Product Images</span> panel above.</p>
           )}
           <FormField label="Video link — YouTube, Instagram or TikTok">
             <Input

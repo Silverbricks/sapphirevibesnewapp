@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth-helpers";
 import { getSiteSettings } from "@/lib/data/settings";
+import { getCustomerProfile } from "@/lib/data/orders";
 import { sendEmail } from "@/lib/email";
 import { sendSms } from "@/lib/sms";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -431,6 +432,11 @@ export async function createManualOrder(formData: FormData) {
   await db.auditLog.create({ data: { actorName: staff.name, action: "Created manual order", targetType: "Order", targetId: created.number } });
   revalidatePath("/admin/orders");
   redirect(`/admin/orders/${created.number}`);
+}
+
+export async function loadCustomerProfile(userId: string) {
+  await requireStaff();
+  return getCustomerProfile(userId);
 }
 
 export async function bulkOrderAction(ids: string[], action: string, value?: string) {

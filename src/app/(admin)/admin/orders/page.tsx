@@ -12,7 +12,7 @@ export const metadata = { title: "Orders · Admin" };
 
 interface SP {
   status?: string; q?: string; paymentMethod?: string; shippingMethod?: string;
-  state?: string; country?: string; dateFrom?: string; dateTo?: string; page?: string;
+  state?: string; country?: string; customer?: string; dateFrom?: string; dateTo?: string; page?: string;
 }
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -29,6 +29,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       shippingMethod: sp.shippingMethod,
       state: sp.state,
       country: sp.country,
+      customer: sp.customer,
       dateFrom: sp.dateFrom,
       dateTo: sp.dateTo,
       page: sp.page ? parseInt(sp.page, 10) : 1,

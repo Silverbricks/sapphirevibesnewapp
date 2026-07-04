@@ -218,12 +218,12 @@ async function main() {
     },
     include: { addresses: true },
   });
-  const danielK = await db.user.create({ data: { name: "Daniel Kane", email: "dkane@email.com", passwordHash: password, role: "CUSTOMER", customerType: "RETAIL", vipTierId: silver.id, pointsBalance: 320, referralCode: "DANIEL20", createdAt: d("2025-03-01") } });
-  const priya = await db.user.create({ data: { name: "Priya Sharma", email: "priya.s@email.com", passwordHash: password, role: "CUSTOMER", customerType: "VIP", vipTierId: gold.id, pointsBalance: 880, referralCode: "PRIYA20", createdAt: d("2024-09-12") } });
-  const studioLumen = await db.user.create({ data: { name: "Studio Lumen", email: "hello@studiolumen.au", passwordHash: password, role: "INTERIOR_DESIGNER", customerType: "TRADE", vipTierId: elite.id, pointsBalance: 4200, referralCode: "LUMEN20", createdAt: d("2023-11-01") } });
-  const marcusC = await db.user.create({ data: { name: "Marcus Lee", email: "mlee@email.com", passwordHash: password, role: "CUSTOMER", customerType: "RETAIL", vipTierId: silver.id, pointsBalance: 210, referralCode: "MARCUS20", createdAt: d("2025-01-20") } });
-  const hotelVista = await db.user.create({ data: { name: "Hotel Vista Group", email: "procurement@vista.com", passwordHash: password, role: "CORPORATE", customerType: "CORPORATE", vipTierId: elite.id, pointsBalance: 0, referralCode: "VISTA20", createdAt: d("2024-06-05") } });
-  const sofiaC = await db.user.create({ data: { name: "Sofia Green", email: "sofia.g@email.com", passwordHash: password, role: "CUSTOMER", customerType: "RETAIL", vipTierId: silver.id, pointsBalance: 95, referralCode: "SOFIA20", createdAt: d("2025-05-02") } });
+  const danielK = await db.user.create({ data: { name: "Daniel Kane", email: "dkane@email.com", passwordHash: password, role: "CUSTOMER", customerType: "RETAIL", vipTierId: silver.id, pointsBalance: 320, phone: "+61 423 555 821", referralCode: "DANIEL20", createdAt: d("2025-03-01") } });
+  const priya = await db.user.create({ data: { name: "Priya Sharma", email: "priya.s@email.com", passwordHash: password, role: "CUSTOMER", customerType: "VIP", vipTierId: gold.id, pointsBalance: 880, phone: "+61 438 765 123", referralCode: "PRIYA20", createdAt: d("2024-09-12") } });
+  const studioLumen = await db.user.create({ data: { name: "Studio Lumen", email: "hello@studiolumen.au", passwordHash: password, role: "INTERIOR_DESIGNER", customerType: "TRADE", vipTierId: elite.id, pointsBalance: 4200, phone: "+61 3 9000 1122", company: "Studio Lumen Pty Ltd", abn: "54 221 887 010", referralCode: "LUMEN20", createdAt: d("2023-11-01") } });
+  const marcusC = await db.user.create({ data: { name: "Marcus Lee", email: "mlee@email.com", passwordHash: password, role: "CUSTOMER", customerType: "RETAIL", vipTierId: silver.id, pointsBalance: 210, phone: "+61 401 998 221", referralCode: "MARCUS20", createdAt: d("2025-01-20") } });
+  const hotelVista = await db.user.create({ data: { name: "Hotel Vista Group", email: "procurement@vista.com", passwordHash: password, role: "CORPORATE", customerType: "CORPORATE", vipTierId: elite.id, pointsBalance: 0, phone: "+61 3 9123 4567", alternatePhone: "+61 400 111 222", company: "Hotel Vista Group", abn: "11 600 300 900", referralCode: "VISTA20", createdAt: d("2024-06-05") } });
+  const sofiaC = await db.user.create({ data: { name: "Sofia Green", email: "sofia.g@email.com", passwordHash: password, role: "CUSTOMER", customerType: "RETAIL", vipTierId: silver.id, pointsBalance: 95, phone: "+61 414 876 543", referralCode: "SOFIA20", createdAt: d("2025-05-02") } });
 
   // ── Staff (RBAC) ────────────────────────────────────────────────────────
   const staff: { name: string; email: string; role: string; twoFA: boolean; last: string }[] = [
