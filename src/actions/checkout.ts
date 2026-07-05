@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { auth } from "../../auth";
-import { GST_RATE, FREE_SHIPPING_THRESHOLD_CENTS, SHIPPING_METHODS } from "@/lib/constants";
+import { GST_RATE } from "@/lib/constants";
+import { getFulfilmentSettings, getPaymentSettings } from "@/lib/data/settings";
+import { quoteDelivery, enabledPaymentKeys, fulfilmentAllows } from "@/lib/fulfilment";
 import type { PaymentMethod } from "@prisma/client";
 
 export interface CheckoutInput {
@@ -18,7 +20,7 @@ export interface CheckoutInput {
   postalCode: string;
   country?: string;
   phone?: string;
-  shippingMethod: string;
+  fulfilmentType: "pickup" | "delivery";
   paymentMethod: string;
   couponCode?: string;
   giftCardCode?: string;
@@ -35,8 +37,11 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
   const userId = session?.user?.id ?? null;
 
   if (!input.lines.length) return { error: "Your cart is empty." };
-  if (!input.email || !input.fullName || !input.line1 || !input.city) {
-    return { error: "Please complete your contact and shipping details." };
+  if (!input.email || !input.fullName) {
+    return { error: "Please complete your contact details." };
+  }
+  if (input.fulfilmentType === "delivery" && (!input.line1 || !input.city || !input.postalCode)) {
+    return { error: "Please complete your delivery address, including postcode." };
   }
 
   const products = await db.product.findMany({
@@ -63,9 +68,27 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
   }
   if (!items.length) return { error: "None of your items are available." };
 
-  // shipping
-  const method = SHIPPING_METHODS.find((m) => m.id === input.shippingMethod) ?? SHIPPING_METHODS[0];
-  let shipping = subtotal >= FREE_SHIPPING_THRESHOLD_CENTS ? 0 : method.cents;
+  // fulfilment — recompute the delivery fee authoritatively from saved settings (never trust the client)
+  const fulfilment = await getFulfilmentSettings();
+  let shipping = 0;
+  let shippingMethodLabel = "Pickup";
+  if (input.fulfilmentType === "delivery") {
+    if (!fulfilmentAllows(fulfilment, "delivery")) return { error: "Delivery isn't available right now." };
+    const quote = quoteDelivery(input.postalCode, subtotal, fulfilment.delivery);
+    if (!quote.available || !quote.zone) {
+      return { error: quote.reason ?? "Delivery isn't available for this address." };
+    }
+    shipping = quote.feeCents;
+    shippingMethodLabel = `Delivery — ${quote.zone.name}`;
+  } else {
+    if (!fulfilmentAllows(fulfilment, "pickup")) return { error: "Pickup isn't available right now." };
+  }
+
+  // payment — reject any method the owner hasn't enabled
+  const enabled = enabledPaymentKeys(await getPaymentSettings());
+  if (enabled.length && !enabled.includes(input.paymentMethod)) {
+    return { error: "That payment method isn't available. Please choose another." };
+  }
 
   // coupon
   let discount = 0;
@@ -144,15 +167,23 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
         totalCents: total,
         couponId,
         giftCardId,
-        shippingMethod: method.label,
+        shippingMethod: shippingMethodLabel,
         invoiceNumber: `INV-${number.replace(/\D/g, "")}`,
         giftWrap: !!input.giftWrap,
         orderNotes: input.orderNotes || null,
-        shippingSnapshot: {
-          fullName: input.fullName, line1: input.line1, line2: input.line2 ?? null,
-          city: input.city, region: input.region, postalCode: input.postalCode, country: input.country ?? "Australia",
-          phone: input.phone ?? null,
-        },
+        shippingSnapshot:
+          input.fulfilmentType === "pickup"
+            ? {
+                fullName: input.fullName,
+                method: "Pickup",
+                pickupAddress: fulfilment.pickup.address,
+                phone: input.phone ?? null,
+              }
+            : {
+                fullName: input.fullName, line1: input.line1, line2: input.line2 ?? null,
+                city: input.city, region: input.region, postalCode: input.postalCode, country: input.country ?? "Australia",
+                phone: input.phone ?? null,
+              },
         items: { create: items },
         events: {
           create: [

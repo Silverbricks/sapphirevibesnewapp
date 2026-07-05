@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Input, Select, buttonClasses } from "@/components/ui";
 
 const PAYMENT_METHODS = ["VISA", "MASTERCARD", "AMEX", "PAYPAL", "APPLE_PAY", "GOOGLE_PAY", "AFTERPAY", "ZIP", "BANK_TRANSFER", "GIFT_CARD"];
-const SHIPPING_METHODS = ["Standard Shipping", "Express Shipping", "Free Express Shipping", "Click & Collect"];
+const SHIPPING_METHODS = ["Pickup", "Delivery", "Standard Shipping", "Express Shipping", "Free Express Shipping", "Click & Collect"];
 const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
 const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 

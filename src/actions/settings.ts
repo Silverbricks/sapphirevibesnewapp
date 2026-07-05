@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth-helpers";
 import { saveUploadedImage } from "@/lib/upload";
+import { PAYMENT_METHODS_CATALOGUE } from "@/lib/constants";
+import type { FulfilmentSettings, PaymentSettings, DeliveryZone } from "@/lib/fulfilment";
 
 function str(fd: FormData, key: string): string {
   return (fd.get(key) as string)?.trim() || "";
@@ -138,5 +140,81 @@ export async function saveShippingSettings(formData: FormData) {
   });
   await logSetting(staff.name, "shipping");
   revalidatePath("/admin/settings");
+  return { ok: true as const };
+}
+
+const num = (v: unknown, fallback = 0): number => {
+  const n = typeof v === "number" ? v : parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
+  return Number.isFinite(n) ? n : fallback;
+};
+const slug = (s: string) =>
+  s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || Math.random().toString(36).slice(2, 8);
+
+/** Delivery / pickup fulfilment. Client submits `payload` = JSON.stringify(FulfilmentSettings). */
+export async function saveFulfilmentSettings(formData: FormData) {
+  const staff = await requireStaff();
+  let raw: Partial<FulfilmentSettings> = {};
+  try {
+    raw = JSON.parse(str(formData, "payload") || "{}");
+  } catch {
+    return { ok: false as const };
+  }
+
+  const orderType: FulfilmentSettings["orderType"] =
+    raw.orderType === "pickup" || raw.orderType === "delivery" ? raw.orderType : "both";
+
+  const zones: DeliveryZone[] = Array.isArray(raw.delivery?.zones)
+    ? raw.delivery!.zones
+        .filter((z) => z && (String(z.name).trim() || String(z.postcodes).trim()))
+        .map((z) => ({
+          id: String(z.id || slug(String(z.name || "zone"))),
+          name: String(z.name || "").trim() || "Zone",
+          postcodes: String(z.postcodes || "").trim(),
+          feeCents: Math.max(0, num(z.feeCents)),
+          eta: String(z.eta || "").trim(),
+        }))
+    : [];
+
+  const value: FulfilmentSettings = {
+    orderType,
+    pickup: {
+      enabled: !!raw.pickup?.enabled,
+      address: String(raw.pickup?.address || "").trim(),
+      instructions: String(raw.pickup?.instructions || "").trim(),
+      prepTimeMinutes: Math.max(0, num(raw.pickup?.prepTimeMinutes)),
+      schedule: String(raw.pickup?.schedule || "").trim(),
+    },
+    delivery: {
+      enabled: !!raw.delivery?.enabled,
+      minOrderCents: Math.max(0, num(raw.delivery?.minOrderCents)),
+      freeOverCents: Math.max(0, num(raw.delivery?.freeOverCents)),
+      zones,
+    },
+  };
+
+  await upsertSetting("fulfilment", value);
+  await logSetting(staff.name, "fulfilment");
+  revalidatePath("/admin/settings");
+  revalidatePath("/checkout");
+  return { ok: true as const };
+}
+
+/** Payment method enable/disable. Client submits `payload` = JSON.stringify({ methods }). */
+export async function savePaymentSettings(formData: FormData) {
+  const staff = await requireStaff();
+  let raw: Partial<PaymentSettings> = {};
+  try {
+    raw = JSON.parse(str(formData, "payload") || "{}");
+  } catch {
+    return { ok: false as const };
+  }
+  const saved = raw.methods ?? {};
+  const methods: Record<string, boolean> = {};
+  for (const m of PAYMENT_METHODS_CATALOGUE) methods[m.key] = !!saved[m.key];
+
+  await upsertSetting("payments", { methods });
+  await logSetting(staff.name, "payments");
+  revalidatePath("/admin/settings");
+  revalidatePath("/checkout");
   return { ok: true as const };
 }

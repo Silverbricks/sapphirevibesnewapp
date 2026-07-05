@@ -1,5 +1,8 @@
 import { db } from "@/lib/db";
-import { SITE } from "@/lib/constants";
+import { SITE, PAYMENT_METHODS_CATALOGUE } from "@/lib/constants";
+import type { FulfilmentSettings, PaymentSettings } from "@/lib/fulfilment";
+
+export type { FulfilmentSettings, PaymentSettings, DeliveryZone } from "@/lib/fulfilment";
 
 export interface StoreSettings {
   name: string;
@@ -75,6 +78,62 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     return { ...SYSTEM_DEFAULTS, ...((row?.value as Partial<SystemSettings> | null) ?? {}) };
   } catch {
     return SYSTEM_DEFAULTS;
+  }
+}
+
+/** Delivery / pickup fulfilment configuration (owner-managed). */
+const FULFILMENT_DEFAULTS: FulfilmentSettings = {
+  orderType: "both",
+  pickup: {
+    enabled: true,
+    address: "1 Laidlaw Lane, Cranbourne West, Victoria 3977, Australia",
+    instructions: "Please head to the front counter and quote your order number.",
+    prepTimeMinutes: 120,
+    schedule: "Mon–Fri 9am–5pm · Sat 10am–2pm",
+  },
+  delivery: {
+    enabled: true,
+    minOrderCents: 0,
+    freeOverCents: 15000, // free delivery over $150
+    zones: [
+      { id: "local", name: "Local (Cranbourne & surrounds)", postcodes: "3977, 3975, 3976, 3978, 3980", feeCents: 995, eta: "Same day – next day" },
+      { id: "se-melbourne", name: "South-East Melbourne", postcodes: "3800-3810, 3170-3175, 3199, 3806", feeCents: 1495, eta: "1–2 business days" },
+      { id: "metro", name: "Rest of Metro Melbourne", postcodes: "*", feeCents: 1995, eta: "2–3 business days" },
+    ],
+  },
+};
+
+/** Payment methods the store accepts, keyed by PAYMENT_METHODS_CATALOGUE. */
+const PAYMENT_DEFAULTS: PaymentSettings = {
+  methods: Object.fromEntries(PAYMENT_METHODS_CATALOGUE.map((m) => [m.key, m.defaultOn])),
+};
+
+export async function getFulfilmentSettings(): Promise<FulfilmentSettings> {
+  try {
+    const row = await db.setting.findUnique({ where: { key: "fulfilment" } });
+    const v = (row?.value as Partial<FulfilmentSettings> | null) ?? {};
+    return {
+      orderType: v.orderType ?? FULFILMENT_DEFAULTS.orderType,
+      pickup: { ...FULFILMENT_DEFAULTS.pickup, ...(v.pickup ?? {}) },
+      delivery: {
+        ...FULFILMENT_DEFAULTS.delivery,
+        ...(v.delivery ?? {}),
+        zones: v.delivery?.zones ?? FULFILMENT_DEFAULTS.delivery.zones,
+      },
+    };
+  } catch {
+    return FULFILMENT_DEFAULTS;
+  }
+}
+
+export async function getPaymentSettings(): Promise<PaymentSettings> {
+  try {
+    const row = await db.setting.findUnique({ where: { key: "payments" } });
+    const saved = (row?.value as Partial<PaymentSettings> | null)?.methods ?? {};
+    // Merge over defaults so newly-added catalogue methods appear with their default state.
+    return { methods: { ...PAYMENT_DEFAULTS.methods, ...saved } };
+  } catch {
+    return PAYMENT_DEFAULTS;
   }
 }
 

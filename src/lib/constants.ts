@@ -76,6 +76,26 @@ export const PAYMENT_METHODS_DISPLAY = [
   "ZIP",
 ] as const;
 
+/**
+ * Canonical catalogue of payment methods the owner can enable/disable.
+ * `key` must match a `PaymentMethod` enum value; `defaultOn` seeds PAYMENT_DEFAULTS.
+ * Drives both the admin toggle list and the checkout payment options.
+ */
+export const PAYMENT_METHODS_CATALOGUE = [
+  { key: "VISA", label: "Visa", desc: "Credit / debit card", defaultOn: true },
+  { key: "MASTERCARD", label: "Mastercard", desc: "Credit / debit card", defaultOn: true },
+  { key: "APPLE_PAY", label: "Apple Pay", desc: "One-tap wallet", defaultOn: true },
+  { key: "GOOGLE_PAY", label: "Google Pay", desc: "One-tap wallet", defaultOn: true },
+  { key: "PAYPAL", label: "PayPal", desc: "PayPal balance or linked account", defaultOn: true },
+  { key: "ZIP", label: "Zip Pay", desc: "Buy now, pay later", defaultOn: true },
+  { key: "BANK_TRANSFER", label: "Bank Transfer", desc: "Direct deposit / EFT", defaultOn: true },
+  { key: "AFTERPAY", label: "Afterpay", desc: "Buy now, pay later", defaultOn: false },
+  { key: "CASH_ON_DELIVERY", label: "Cash on Delivery", desc: "Pay on pickup / delivery", defaultOn: false },
+  { key: "AMEX", label: "Amex", desc: "American Express", defaultOn: false },
+] as const;
+
+export type PaymentMethodKey = (typeof PAYMENT_METHODS_CATALOGUE)[number]["key"];
+
 /** Flat shipping options (no live carrier rates in v1). Prices in cents. */
 export const SHIPPING_METHODS = [
   { id: "standard", label: "Standard Shipping", desc: "3–7 business days", cents: 995 },

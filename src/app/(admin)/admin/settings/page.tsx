@@ -5,10 +5,11 @@ import { getSiteSettings } from "@/lib/data/settings";
 import { Panel, Input, Textarea, FormField, buttonClasses } from "@/components/ui";
 import { PageHead } from "@/components/admin/PageHead";
 import { SettingForm } from "@/components/admin/SettingForm";
-import { ShippingSettingsForm } from "@/components/admin/ShippingSettingsForm";
+import { FulfilmentSettingsForm } from "@/components/admin/FulfilmentSettingsForm";
+import { PaymentSettingsForm } from "@/components/admin/PaymentSettingsForm";
 import { IntegrationsEditor } from "@/components/admin/IntegrationsEditor";
 import { SystemSettingsForm } from "@/components/admin/SystemSettingsForm";
-import { getSystemSettings } from "@/lib/data/settings";
+import { getSystemSettings, getFulfilmentSettings, getPaymentSettings } from "@/lib/data/settings";
 import {
   saveStoreSettings,
   saveBrandingSettings,
@@ -25,8 +26,10 @@ const fileInput =
 export default async function SettingsPage() {
   await requireModule("settings");
   const { integrations } = await getSettingsData();
-  const { store, social, branding, tax, shipping } = await getSiteSettings();
+  const { store, social, branding, tax } = await getSiteSettings();
   const system = await getSystemSettings();
+  const fulfilment = await getFulfilmentSettings();
+  const payments = await getPaymentSettings();
 
   return (
     <>
@@ -84,14 +87,16 @@ export default async function SettingsPage() {
           <FormField label="YouTube"><Input name="youtube" defaultValue={social.youtube} placeholder="https://youtube.com/@…" /></FormField>
         </SettingForm>
 
-        <div className="space-y-[18px]">
-          <SettingForm action={saveTaxSettings} title="Tax & GST">
-            <FormField label="GST Rate (%)"><Input name="gstRate" defaultValue={String((tax.gstRate ?? 0.1) * 100)} /></FormField>
-            <FormField label="Tax Display"><Input name="display" defaultValue={tax.display} /></FormField>
-            <FormField label="Business ABN"><Input name="abn" defaultValue={tax.abn} /></FormField>
-          </SettingForm>
-          <ShippingSettingsForm shipping={shipping} />
-        </div>
+        <SettingForm action={saveTaxSettings} title="Tax & GST">
+          <FormField label="GST Rate (%)"><Input name="gstRate" defaultValue={String((tax.gstRate ?? 0.1) * 100)} /></FormField>
+          <FormField label="Tax Display"><Input name="display" defaultValue={tax.display} /></FormField>
+          <FormField label="Business ABN"><Input name="abn" defaultValue={tax.abn} /></FormField>
+        </SettingForm>
+      </div>
+
+      <div className="mb-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_360px]">
+        <FulfilmentSettingsForm fulfilment={fulfilment} />
+        <PaymentSettingsForm payments={payments} />
       </div>
 
       <div className="mb-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_360px]">

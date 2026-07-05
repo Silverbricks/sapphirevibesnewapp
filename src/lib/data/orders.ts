@@ -93,7 +93,7 @@ export async function getOrders(f: OrderFilters = {}) {
   }
 
   if (f.paymentMethod) where.paymentMethod = f.paymentMethod as PaymentMethod;
-  if (f.shippingMethod) where.shippingMethod = f.shippingMethod;
+  if (f.shippingMethod) where.shippingMethod = { contains: f.shippingMethod, mode: "insensitive" };
   if (f.state) and.push({ shippingSnapshot: { path: ["region"], equals: f.state } });
   if (f.country) and.push({ shippingSnapshot: { path: ["country"], equals: f.country } });
 

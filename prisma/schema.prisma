@@ -70,6 +70,7 @@ enum PaymentMethod {
   AFTERPAY
   ZIP
   BANK_TRANSFER
+  CASH_ON_DELIVERY
   GIFT_CARD
   MOCK
 }
