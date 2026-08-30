@@ -89,6 +89,14 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
   if (enabled.length && !enabled.includes(input.paymentMethod)) {
     return { error: "That payment method isn't available. Please choose another." };
   }
+  // Cash on Delivery and Bank Transfer are collected later — the order is not paid at checkout.
+  const deferredPayment = input.paymentMethod === "CASH_ON_DELIVERY" || input.paymentMethod === "BANK_TRANSFER";
+  const paymentStatus = deferredPayment ? "UNPAID" : "PAID";
+  const paymentEventLabel = deferredPayment
+    ? input.paymentMethod === "CASH_ON_DELIVERY"
+      ? "Awaiting payment on delivery/pickup"
+      : "Awaiting bank transfer"
+    : "Payment received";
 
   // coupon
   let discount = 0;
@@ -155,7 +163,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
         guestEmail: userId ? null : input.email,
         customerName: input.fullName,
         status: "PROCESSING",
-        paymentStatus: "PAID",
+        paymentStatus,
         paymentMethod: (input.paymentMethod as PaymentMethod) || "MOCK",
         subtotalCents: subtotal,
         discountCents: discount,
@@ -188,7 +196,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
         events: {
           create: [
             { kind: "SYSTEM", label: "Order placed" },
-            { kind: "SYSTEM", label: "Payment received" },
+            { kind: "SYSTEM", label: paymentEventLabel },
             { kind: "STATUS", label: "Processing started" },
           ],
         },
