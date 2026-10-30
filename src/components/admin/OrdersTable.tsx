@@ -87,6 +87,7 @@ export function OrdersTable({ orders, page, pages, query }: { orders: Row[]; pag
           <span className="text-gold">{sel.size} selected</span>
           <Select value={action} onChange={(e) => setAction(e.target.value)} className="w-auto py-1.5 text-xs">
             <option value="status">Set status</option>
+            <option value="paid">Mark paid</option>
             <option value="assign">Assign to</option>
             <option value="archive">Archive</option>
             <option value="unarchive">Restore</option>

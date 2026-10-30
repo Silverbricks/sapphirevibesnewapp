@@ -6,7 +6,7 @@ import { useStore } from "@/components/storefront/store-context";
 import { Button, Input, Select, FormField, Panel, EmptyState, buttonClasses, Toggle } from "@/components/ui";
 import { placeOrder } from "@/actions/checkout";
 import { formatMoney } from "@/lib/format";
-import { GST_RATE, PAYMENT_METHODS_CATALOGUE } from "@/lib/constants";
+import { PAYMENT_METHODS_CATALOGUE } from "@/lib/constants";
 import type { FulfilmentSettings, PaymentSettings } from "@/lib/data/settings";
 import { quoteDelivery, fulfilmentAllows, type FulfilmentType } from "@/lib/fulfilment";
 
@@ -20,9 +20,11 @@ function formatPrep(min: number): string {
 export function CheckoutClient({
   fulfilment,
   payments,
+  gstRate,
 }: {
   fulfilment: FulfilmentSettings;
   payments: PaymentSettings;
+  gstRate: number;
 }) {
   const store = useStore();
 
@@ -51,7 +53,7 @@ export function CheckoutClient({
 
   const isPickup = fulfilmentType === "pickup";
   const shipping = isPickup ? 0 : quote.available ? quote.feeCents : 0;
-  const tax = Math.round(subtotal * GST_RATE);
+  const tax = Math.round(subtotal * gstRate);
   const total = subtotal + shipping + tax;
 
   const deliveryBlocked = !isPickup && (!quote.available || !quote.zone);

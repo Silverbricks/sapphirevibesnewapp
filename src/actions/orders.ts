@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth-helpers";
-import { getSiteSettings } from "@/lib/data/settings";
+import { getSiteSettings, getTaxRate } from "@/lib/data/settings";
 import { getCustomerProfile } from "@/lib/data/orders";
 import { sendEmail } from "@/lib/email";
 import { sendSms } from "@/lib/sms";
 import { formatMoney, formatDate } from "@/lib/format";
-import { GST_RATE, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/constants";
+import { FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/constants";
 import { Prisma } from "@prisma/client";
 import type { OrderStatus, PaymentStatus, PaymentMethod } from "@prisma/client";
 
@@ -175,6 +175,49 @@ export async function addOrderNote(orderId: string, formData: FormData) {
   return { ok: true as const };
 }
 
+// ───────────────────────── payment ─────────────────────────
+
+/**
+ * Settles an order placed without payment (Cash on Delivery, Bank Transfer,
+ * manual orders). Marks the full total PAID — there is no partial-payment
+ * field, so the amount recorded is always the order total.
+ */
+export async function recordPayment(orderId: string, formData: FormData) {
+  const staff = await requireStaff();
+  const order = await db.order.findUnique({ where: { id: orderId } });
+  if (!order) return { error: "Order not found." };
+  if (order.paymentStatus === "PAID") return { error: "This order is already marked paid." };
+  if (order.paymentStatus === "REFUNDED" || order.paymentStatus === "PARTIALLY_REFUNDED") {
+    return { error: "This order has been refunded — it can't be marked paid." };
+  }
+
+  const method = (str(formData, "method") || order.paymentMethod) as PaymentMethod;
+  const reference = str(formData, "reference");
+
+  await db.order.update({
+    where: { id: orderId },
+    data: { paymentStatus: "PAID" as PaymentStatus, paymentMethod: method },
+  });
+  await logEvent(
+    order.id,
+    "SYSTEM",
+    `Payment of ${formatMoney(order.totalCents)} received via ${label(method)}`,
+    reference ? `Reference: ${reference}` : null,
+    staff.name,
+  );
+  await db.auditLog.create({
+    data: {
+      actorName: staff.name,
+      action: "Recorded payment",
+      targetType: "Order",
+      targetId: order.number,
+      meta: { method, reference: reference || null, amount: order.totalCents },
+    },
+  });
+  revalidateOrder(order.number);
+  return { ok: true as const };
+}
+
 // ───────────────────────── refund / cancel / archive ─────────────────────────
 
 export async function refundOrder(orderId: string, formData: FormData) {
@@ -183,6 +226,8 @@ export async function refundOrder(orderId: string, formData: FormData) {
   if (!order) return { error: "Order not found." };
   const amount = cents(formData, "amount") || order.totalCents;
   const reason = str(formData, "reason") || null;
+  if (amount < 0) return { error: "Refund amount can't be negative." };
+  if (order.refundedCents >= order.totalCents) return { error: "This order is already fully refunded." };
   const newRefunded = Math.min(order.totalCents, order.refundedCents + amount);
   const full = newRefunded >= order.totalCents;
   await db.order.update({
@@ -383,24 +428,34 @@ export async function createManualOrder(formData: FormData) {
   } catch {
     lines = [];
   }
-  lines = lines.filter((l) => l.productId && l.qty > 0);
-  if (!lines.length) return { error: "Add at least one product." };
+  // whole positive quantities only, and one entry per product
+  const wanted = new Map<string, number>();
+  for (const l of Array.isArray(lines) ? lines : []) {
+    const qty = Math.floor(Number(l?.qty));
+    if (!l?.productId || !Number.isSafeInteger(qty) || qty < 1) continue;
+    wanted.set(l.productId, (wanted.get(l.productId) ?? 0) + qty);
+  }
+  if (!wanted.size) return { error: "Add at least one product." };
 
   const products = await db.product.findMany({
-    where: { id: { in: lines.map((l) => l.productId) } },
+    where: { id: { in: [...wanted.keys()] } },
     include: { images: { take: 1, orderBy: { position: "asc" }, select: { url: true } } },
   });
 
-  const items = lines.map((l) => {
-    const p = products.find((x) => x.id === l.productId)!;
-    return {
+  // a line can reference a product that has since been deleted — skip it rather than crash
+  const items = [...wanted.entries()].flatMap(([productId, qty]) => {
+    const p = products.find((x) => x.id === productId);
+    if (!p) return [];
+    return [{
       productId: p.id, nameSnapshot: p.name, skuSnapshot: p.sku, imageSnapshot: p.images[0]?.url ?? null,
-      colour: p.colour ?? null, unitCents: p.priceCents, quantity: l.qty, lineCents: p.priceCents * l.qty,
-    };
+      colour: p.colour ?? null, unitCents: p.priceCents, quantity: qty, lineCents: p.priceCents * qty,
+    }];
   });
+  if (!items.length) return { error: "None of those products are available any more." };
+
   const subtotal = items.reduce((s, i) => s + i.lineCents, 0);
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD_CENTS ? 0 : 995;
-  const tax = Math.round(subtotal * GST_RATE);
+  const tax = Math.round(subtotal * (await getTaxRate()));
   const total = subtotal + shipping + tax;
 
   const user = email ? await db.user.findUnique({ where: { email }, select: { id: true } }) : null;
@@ -443,10 +498,21 @@ export async function bulkOrderAction(ids: string[], action: string, value?: str
   const staff = await requireStaff();
   if (!ids.length) return { error: "No orders selected." };
   const orders = await db.order.findMany({ where: { id: { in: ids } }, select: { id: true } });
+  let affected = ids.length;
 
   if (action === "status" && value) {
     await db.order.updateMany({ where: { id: { in: ids } }, data: { status: value as OrderStatus } });
     for (const o of orders) await logEvent(o.id, "STATUS", `Bulk status → ${label(value)}`, null, staff.name);
+  } else if (action === "paid") {
+    // only orders still awaiting payment — never un-refund or re-pay a settled order
+    const payable = await db.order.findMany({
+      where: { id: { in: ids }, paymentStatus: { in: ["UNPAID", "AUTHORIZED", "FAILED"] } },
+      select: { id: true },
+    });
+    if (!payable.length) return { error: "None of the selected orders are awaiting payment." };
+    await db.order.updateMany({ where: { id: { in: payable.map((o) => o.id) } }, data: { paymentStatus: "PAID" } });
+    for (const o of payable) await logEvent(o.id, "SYSTEM", "Payment received", null, staff.name);
+    affected = payable.length;
   } else if (action === "archive") {
     await db.order.updateMany({ where: { id: { in: ids } }, data: { archivedAt: new Date() } });
   } else if (action === "unarchive") {
@@ -456,7 +522,7 @@ export async function bulkOrderAction(ids: string[], action: string, value?: str
   } else {
     return { error: "Unknown bulk action." };
   }
-  await db.auditLog.create({ data: { actorName: staff.name, action: `Bulk ${action}`, targetType: "Order", meta: { count: ids.length, value } } });
+  await db.auditLog.create({ data: { actorName: staff.name, action: `Bulk ${action}`, targetType: "Order", meta: { count: affected, value } } });
   revalidatePath("/admin/orders");
-  return { ok: true as const, count: ids.length };
+  return { ok: true as const, count: affected };
 }

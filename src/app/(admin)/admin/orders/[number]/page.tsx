@@ -98,7 +98,7 @@ export default async function AdminOrderDetail({ params }: { params: Promise<{ n
 
         {/* sidebar */}
         <div className="space-y-5">
-          <OrderActionsBar orderId={order.id} number={order.number} status={order.status} archived={!!order.archivedAt} />
+          <OrderActionsBar orderId={order.id} number={order.number} status={order.status} archived={!!order.archivedAt} paymentStatus={order.paymentStatus} paymentMethod={order.paymentMethod} totalCents={order.totalCents} />
           <CustomerCard orderId={order.id} data={customer} />
           <AddressesCard orderId={order.id} shipping={shipping} billing={billing} sameBilling={order.billingSameAsShipping} />
           <DeliveryCard orderId={order.id} d={order} />

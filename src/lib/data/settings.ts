@@ -108,6 +108,21 @@ const PAYMENT_DEFAULTS: PaymentSettings = {
   methods: Object.fromEntries(PAYMENT_METHODS_CATALOGUE.map((m) => [m.key, m.defaultOn])),
 };
 
+/**
+ * Configured GST/tax rate as a fraction (0.1 = 10%). Anything outside 0–1 (a rate
+ * entered straight into the DB as "10", say) falls back to the default.
+ */
+export async function getTaxRate(): Promise<number> {
+  try {
+    const row = await db.setting.findUnique({ where: { key: "tax" } });
+    const raw = (row?.value as Partial<TaxSettings> | null)?.gstRate;
+    if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0 || raw >= 1) return TAX_DEFAULTS.gstRate;
+    return raw;
+  } catch {
+    return TAX_DEFAULTS.gstRate;
+  }
+}
+
 export async function getFulfilmentSettings(): Promise<FulfilmentSettings> {
   try {
     const row = await db.setting.findUnique({ where: { key: "fulfilment" } });

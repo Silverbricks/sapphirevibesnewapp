@@ -3,25 +3,44 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Mail, Truck, Printer, Undo2, Ban, Archive, Copy, RotateCcw, X } from "lucide-react";
-import { Panel, Input, Textarea, FormField, Button, buttonClasses } from "@/components/ui";
+import { Mail, Truck, Printer, Undo2, Ban, Archive, Copy, RotateCcw, X, Banknote } from "lucide-react";
+import { Panel, Input, Textarea, Select, FormField, Button, buttonClasses } from "@/components/ui";
 import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
-import { sendOrderEmail, refundOrder, cancelOrder, setArchived, duplicateOrder } from "@/actions/orders";
+import { sendOrderEmail, recordPayment, refundOrder, cancelOrder, setArchived, duplicateOrder } from "@/actions/orders";
+import { PAYMENT_METHODS_CATALOGUE } from "@/lib/constants";
+import { formatMoney } from "@/lib/format";
+
+const CATALOGUE: { key: string; label: string }[] = PAYMENT_METHODS_CATALOGUE.map((m) => ({ key: m.key, label: m.label }));
 
 export function OrderActionsBar({
   orderId,
   number,
   status,
   archived,
+  paymentStatus,
+  paymentMethod,
+  totalCents,
 }: {
   orderId: string;
   number: string;
   status: string;
   archived: boolean;
+  paymentStatus: string;
+  paymentMethod: string;
+  totalCents: number;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [refundOpen, setRefundOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+
+  // Cash on Delivery / Bank Transfer / manual orders are placed unpaid and
+  // settled here once the money actually lands.
+  const awaitingPayment = paymentStatus === "UNPAID" || paymentStatus === "AUTHORIZED" || paymentStatus === "FAILED";
+  // legacy / seeded methods (MOCK, GIFT_CARD) are not in the settings catalogue — keep them selectable
+  const methodOptions = CATALOGUE.some((m) => m.key === paymentMethod)
+    ? CATALOGUE
+    : [{ key: paymentMethod, label: paymentMethod.replace(/_/g, " ") }, ...CATALOGUE];
 
   const run = (fn: () => Promise<{ error?: string } | { ok: true } | void>, ok: string) =>
     start(async () => {
@@ -41,6 +60,9 @@ export function OrderActionsBar({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
+        {awaitingPayment && (
+          <ActBtn icon={Banknote} label="Record Payment" onClick={() => setPayOpen(true)} disabled={pending} />
+        )}
         <ActBtn icon={Mail} label="Email Invoice" onClick={() => run(() => sendOrderEmail(orderId, "invoice"), "Invoice emailed")} disabled={pending} />
         <ActBtn icon={Truck} label="Email Tracking" onClick={() => run(() => sendOrderEmail(orderId, "tracking"), "Tracking emailed")} disabled={pending} />
         <ActBtn icon={Printer} label="Invoice" onClick={() => print("invoice")} />
@@ -57,21 +79,44 @@ export function OrderActionsBar({
         )}
       </div>
 
+      {payOpen && (
+        <Modal title="Record a Payment" onClose={() => setPayOpen(false)}>
+          <form action={(fd) => run(async () => { const r = await recordPayment(orderId, fd); setPayOpen(false); return r; }, "Payment recorded")}>
+            <FormField label="Paid with">
+              <Select name="method" defaultValue={paymentMethod}>
+                {methodOptions.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+              </Select>
+            </FormField>
+            <FormField label="Reference (optional)"><Input name="reference" placeholder="Receipt no. / transfer ID…" /></FormField>
+            <Button type="submit" variant="gold" loading={pending} className="w-full justify-center">Mark {formatMoney(totalCents)} as Paid</Button>
+            <p className="mt-2 text-center text-[11px] text-muted">Records the payment only — no payment-gateway charge is made.</p>
+          </form>
+        </Modal>
+      )}
+
       {refundOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/80 p-4" onClick={() => setRefundOpen(false)}>
-          <div className="relative w-full max-w-sm rounded-panel border border-line-gold bg-bg p-6" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setRefundOpen(false)} className="absolute right-4 top-4 text-muted hover:text-cream"><X className="h-5 w-5" /></button>
-            <h3 className="mb-4 font-serif text-xl">Record a Refund</h3>
-            <form action={(fd) => run(async () => { const r = await refundOrder(orderId, fd); setRefundOpen(false); return r; }, "Refund recorded")}>
-              <FormField label="Amount ($) — blank = full total"><Input name="amount" type="number" step="0.01" placeholder="0.00" /></FormField>
-              <FormField label="Reason"><Textarea name="reason" rows={2} placeholder="Damaged in transit…" /></FormField>
-              <Button type="submit" variant="gold" loading={pending} className="w-full justify-center">Record Refund</Button>
-              <p className="mt-2 text-center text-[11px] text-muted">Records the refund only — no payment-gateway charge is made.</p>
-            </form>
-          </div>
-        </div>
+        <Modal title="Record a Refund" onClose={() => setRefundOpen(false)}>
+          <form action={(fd) => run(async () => { const r = await refundOrder(orderId, fd); setRefundOpen(false); return r; }, "Refund recorded")}>
+            <FormField label="Amount ($) — blank = full total"><Input name="amount" type="number" step="0.01" placeholder="0.00" /></FormField>
+            <FormField label="Reason"><Textarea name="reason" rows={2} placeholder="Damaged in transit…" /></FormField>
+            <Button type="submit" variant="gold" loading={pending} className="w-full justify-center">Record Refund</Button>
+            <p className="mt-2 text-center text-[11px] text-muted">Records the refund only — no payment-gateway charge is made.</p>
+          </form>
+        </Modal>
       )}
     </Panel>
+  );
+}
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/80 p-4" onClick={onClose}>
+      <div className="relative w-full max-w-sm rounded-panel border border-line-gold bg-bg p-6" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute right-4 top-4 text-muted hover:text-cream"><X className="h-5 w-5" /></button>
+        <h3 className="mb-4 font-serif text-xl">{title}</h3>
+        {children}
+      </div>
+    </div>
   );
 }
 
