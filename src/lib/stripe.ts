@@ -37,8 +37,16 @@ export const STRIPE_METHOD_TYPES: Record<string, Stripe.Checkout.SessionCreatePa
   ZIP: "zip",
 };
 
-/** Methods collected by staff after the order is placed — never hit a gateway. */
-export const MANUAL_METHODS = ["BANK_TRANSFER", "CASH_ON_DELIVERY"] as const;
+/**
+ * Methods collected by staff after the order is placed — never hit a gateway.
+ *
+ * PayPal sits here because Stripe doesn't offer it to Australian accounts (it's
+ * EU/UK/CH/NO/LI only), so it has to be settled outside Stripe: the order is placed
+ * UNPAID, the customer is sent a PayPal request, and staff settle it with Record
+ * Payment. Replace this with a real PayPal Checkout integration if the volume
+ * justifies one.
+ */
+export const MANUAL_METHODS = ["BANK_TRANSFER", "CASH_ON_DELIVERY", "PAYPAL"] as const;
 
 export function isStripeMethod(method: string): boolean {
   return method in STRIPE_METHOD_TYPES;

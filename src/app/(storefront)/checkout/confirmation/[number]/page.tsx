@@ -20,6 +20,14 @@ export default async function ConfirmationPage({ params }: { params: Promise<{ n
   const awaitingGateway = order.paymentStatus === "UNPAID" && !!order.paymentSessionId;
   const awaitingManual = order.paymentStatus === "UNPAID" && !order.paymentSessionId;
 
+  // Methods the customer settles away from the site, each needing its own next step.
+  const manualCopy: Record<string, string> = {
+    CASH_ON_DELIVERY: "Payment is due on pickup or delivery. We'll be in touch to arrange it.",
+    PAYPAL: "We'll email you a PayPal payment request for this order. We'll dispatch once it clears.",
+    BANK_TRANSFER:
+      "Please complete your bank transfer using the order number as the reference. We'll dispatch once it clears.",
+  };
+
   const Icon = awaitingGateway ? Clock : awaitingManual ? Landmark : CheckCircle2;
   const heading = awaitingGateway ? "Finalising Your Order" : awaitingManual ? "Order Received" : "Order Confirmed";
   const eyebrow = awaitingGateway ? "Almost There" : "Thank You";
@@ -36,9 +44,7 @@ export default async function ConfirmationPage({ params }: { params: Promise<{ n
           {awaitingGateway
             ? "We're confirming your payment — this usually takes a few seconds. Refresh this page in a moment, and we'll email your receipt as soon as it clears."
             : awaitingManual
-              ? order.paymentMethod === "CASH_ON_DELIVERY"
-                ? "Payment is due on pickup or delivery. We'll be in touch to arrange it."
-                : "Please complete your bank transfer using the order number as the reference. We'll dispatch once it clears."
+              ? (manualCopy[order.paymentMethod] ?? "We'll be in touch to arrange payment.")
               : `A confirmation has been sent to ${order.guestEmail ?? "your email"}.`}
         </p>
 

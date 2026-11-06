@@ -37,6 +37,13 @@ export type CheckoutResult = { error?: string; redirectUrl?: string };
 /** Account tiers that may use a coupon flagged `tradeOnly`. */
 const TRADE_TIERS: string[] = ["TRADE", "CORPORATE", "VIP"];
 
+/** Timeline label for each method staff settle by hand after the order is placed. */
+const MANUAL_PAYMENT_LABELS: Record<string, string> = {
+  CASH_ON_DELIVERY: "Awaiting payment on delivery/pickup",
+  BANK_TRANSFER: "Awaiting bank transfer",
+  PAYPAL: "Awaiting PayPal payment",
+};
+
 /** Next order number, derived from the highest number already issued. */
 async function nextOrderNumber(): Promise<string> {
   const existing = await db.order.findMany({ select: { number: true } });
@@ -134,9 +141,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
 
   const paymentStatus = manualPayment || gatewayPayment ? "UNPAID" : "PAID";
   const paymentEventLabel = manualPayment
-    ? input.paymentMethod === "CASH_ON_DELIVERY"
-      ? "Awaiting payment on delivery/pickup"
-      : "Awaiting bank transfer"
+    ? (MANUAL_PAYMENT_LABELS[input.paymentMethod] ?? "Awaiting payment")
     : gatewayPayment
       ? "Awaiting card payment"
       : "Payment received";
