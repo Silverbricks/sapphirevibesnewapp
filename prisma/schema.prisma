@@ -531,6 +531,10 @@ model Order {
   // staff-only notes { packing, delivery, warehouse, support, refund }
   internalNotes Json?
 
+  // gateway payment references (Stripe session + payment intent)
+  paymentRef       String?
+  paymentSessionId String? @unique
+
   // refunds / lifecycle
   refundedCents Int       @default(0)
   refundReason  String?

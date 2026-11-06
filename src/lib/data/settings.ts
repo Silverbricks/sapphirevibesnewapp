@@ -51,7 +51,7 @@ const STORE_DEFAULTS: StoreSettings = {
   address: "",
   abn: SITE.abn,
   country: SITE.country,
-  currency: "USD",
+  currency: "AUD",
 };
 
 const SOCIAL_DEFAULTS: SocialSettings = {
@@ -120,6 +120,17 @@ export async function getTaxRate(): Promise<number> {
     return raw;
   } catch {
     return TAX_DEFAULTS.gstRate;
+  }
+}
+
+/** Configured store currency as a 3-letter code (defaults to AUD). */
+export async function getStoreCurrency(): Promise<string> {
+  try {
+    const row = await db.setting.findUnique({ where: { key: "store" } });
+    const raw = (row?.value as Partial<StoreSettings> | null)?.currency;
+    return /^[A-Za-z]{3}$/.test(raw ?? "") ? (raw as string).toUpperCase() : STORE_DEFAULTS.currency;
+  } catch {
+    return STORE_DEFAULTS.currency;
   }
 }
 

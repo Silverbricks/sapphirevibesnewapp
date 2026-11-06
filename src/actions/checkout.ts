@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { auth } from "../../auth";
-import { getFulfilmentSettings, getPaymentSettings, getTaxRate } from "@/lib/data/settings";
+import { getFulfilmentSettings, getPaymentSettings, getTaxRate, getStoreCurrency, getBaseUrl } from "@/lib/data/settings";
 import { quoteDelivery, enabledPaymentKeys, fulfilmentAllows } from "@/lib/fulfilment";
+import { stripe, stripeConfigured, stripeCurrency, isStripeMethod, isManualMethod, STRIPE_METHOD_TYPES } from "@/lib/stripe";
 import { Prisma } from "@prisma/client";
 import type { PaymentMethod } from "@prisma/client";
 
@@ -30,7 +31,8 @@ export interface CheckoutInput {
   orderNotes?: string;
 }
 
-export type CheckoutResult = { error: string };
+/** `redirectUrl` is set when the customer must be sent to the payment gateway. */
+export type CheckoutResult = { error?: string; redirectUrl?: string };
 
 /** Account tiers that may use a coupon flagged `tradeOnly`. */
 const TRADE_TIERS: string[] = ["TRADE", "CORPORATE", "VIP"];
@@ -118,14 +120,26 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
   if (!enabled.includes(input.paymentMethod)) {
     return { error: "That payment method isn't available. Please choose another." };
   }
-  // Cash on Delivery and Bank Transfer are collected later — the order is not paid at checkout.
-  const deferredPayment = input.paymentMethod === "CASH_ON_DELIVERY" || input.paymentMethod === "BANK_TRANSFER";
-  const paymentStatus = deferredPayment ? "UNPAID" : "PAID";
-  const paymentEventLabel = deferredPayment
+  // How this order gets paid:
+  //  - manual   (Bank Transfer / COD) → UNPAID, staff settle it with Record Payment
+  //  - gateway  (card, wallets, Afterpay, Zip) → UNPAID now, Stripe webhook marks it PAID
+  //  - no Stripe keys configured → legacy behaviour, marked PAID at checkout
+  const manualPayment = isManualMethod(input.paymentMethod);
+  const gatewayPayment = !manualPayment && stripeConfigured() && isStripeMethod(input.paymentMethod);
+
+  // With Stripe live, a method we can't actually charge must not quietly succeed.
+  if (!manualPayment && stripeConfigured() && !isStripeMethod(input.paymentMethod)) {
+    return { error: "That payment method isn't available online yet. Please choose another." };
+  }
+
+  const paymentStatus = manualPayment || gatewayPayment ? "UNPAID" : "PAID";
+  const paymentEventLabel = manualPayment
     ? input.paymentMethod === "CASH_ON_DELIVERY"
       ? "Awaiting payment on delivery/pickup"
       : "Awaiting bank transfer"
-    : "Payment received";
+    : gatewayPayment
+      ? "Awaiting card payment"
+      : "Payment received";
 
   const user = userId ? await db.user.findUnique({ where: { id: userId } }) : null;
 
@@ -304,5 +318,52 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
 
   revalidatePath("/account");
   revalidatePath("/admin/orders");
+
+  // Gateway payment: the order is reserved UNPAID, now hand the customer to Stripe.
+  // The webhook — not the return URL — is what marks it paid.
+  if (gatewayPayment) {
+    try {
+      const [currency, base] = [await getStoreCurrency(), getBaseUrl()];
+      // One line item for the authoritative total. Itemising would have to re-express
+      // discounts, gift cards, store credit and points as Stripe discounts, and any
+      // rounding mismatch there would charge the customer the wrong amount.
+      const session = await stripe().checkout.sessions.create({
+        mode: "payment",
+        client_reference_id: number,
+        customer_email: input.email,
+        allowed_payment_method_types: [STRIPE_METHOD_TYPES[input.paymentMethod]],
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: stripeCurrency(currency),
+              unit_amount: total,
+              product_data: {
+                name: `Sapphire Vibes order ${number}`,
+                description: `${items.reduce((n, i) => n + i.quantity, 0)} item(s) · incl. GST${shipping > 0 ? " & delivery" : ""}`,
+              },
+            },
+          },
+        ],
+        // Stripe's floor is 30 minutes after session creation. Sending exactly 30 is
+        // rejected, because Stripe evaluates it a moment after we compute it — hence the
+        // buffer. Must stay below the abandoned-order sweeper's window so a session is
+        // already dead at Stripe before we hand its stock back.
+        expires_at: Math.floor(Date.now() / 1000) + 35 * 60,
+        metadata: { orderNumber: number },
+        success_url: `${base}/checkout/confirmation/${number}`,
+        cancel_url: `${base}/checkout?cancelled=${number}`,
+      });
+      await db.order.update({ where: { number }, data: { paymentSessionId: session.id } });
+      if (!session.url) throw new Error("Stripe returned no checkout URL");
+      return { redirectUrl: session.url };
+    } catch (e) {
+      console.error("Stripe Checkout session failed", e);
+      return {
+        error: "We couldn't start the payment just now. Your order is saved — please try again, or choose Bank Transfer.",
+      };
+    }
+  }
+
   redirect(`/checkout/confirmation/${number}`);
 }

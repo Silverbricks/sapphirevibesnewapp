@@ -98,10 +98,15 @@ export function CheckoutClient({
       giftWrap,
       orderNotes: String(fd.get("orderNotes") || ""),
     });
-    // only returns on error; success redirects
+    // Returns on error, or with a gateway URL to hand off to. A fully-settled
+    // order (manual methods) redirects server-side and never gets here.
     if (res?.error) {
       setError(res.error);
       setLoading(false);
+      return;
+    }
+    if (res?.redirectUrl) {
+      window.location.href = res.redirectUrl;
     }
   }
 
