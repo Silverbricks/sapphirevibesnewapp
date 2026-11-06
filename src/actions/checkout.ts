@@ -324,6 +324,11 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
   if (gatewayPayment) {
     try {
       const [currency, base] = [await getStoreCurrency(), getBaseUrl()];
+      // Amex is a card *brand*, not a payment method — so switching "Amex" off in
+      // settings only hides its logo. The card form would still accept an Amex number
+      // behind the Visa/Mastercard option. Make the setting mean something by having
+      // Stripe refuse the brand outright.
+      const blockAmex = STRIPE_METHOD_TYPES[input.paymentMethod] === "card" && !enabled.includes("AMEX");
       // One line item for the authoritative total. Itemising would have to re-express
       // discounts, gift cards, store credit and points as Stripe discounts, and any
       // rounding mismatch there would charge the customer the wrong amount.
@@ -332,6 +337,9 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
         client_reference_id: number,
         customer_email: input.email,
         allowed_payment_method_types: [STRIPE_METHOD_TYPES[input.paymentMethod]],
+        ...(blockAmex
+          ? { payment_method_options: { card: { restrictions: { brands_blocked: ["american_express" as const] } } } }
+          : {}),
         line_items: [
           {
             quantity: 1,
