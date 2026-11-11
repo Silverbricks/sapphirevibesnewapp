@@ -220,7 +220,6 @@ export function CheckoutClient({
               ) : (
                 <p className="text-sm text-muted">No payment methods are currently available. Please contact us to complete your order.</p>
               )}
-              <p className="text-xs text-muted">Demo checkout — no real payment is processed.</p>
             </Panel>
 
             <Panel>

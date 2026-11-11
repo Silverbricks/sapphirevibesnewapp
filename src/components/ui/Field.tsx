@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const fieldBase =
@@ -11,6 +13,33 @@ export const Input = ({
 }: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input className={cn(fieldBase, className)} {...props} />
 );
+
+/** Password field with a show/hide toggle, so a typed value can be checked before submit. */
+export const PasswordInput = ({
+  className,
+  ...props
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">) => {
+  const [visible, setVisible] = useState(false);
+  const Icon = visible ? EyeOff : Eye;
+  return (
+    <div className="relative">
+      {/* pr-11 keeps a long value from running under the toggle. */}
+      <input
+        type={visible ? "text" : "password"}
+        className={cn(fieldBase, "pr-11", className)}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-muted transition-colors hover:text-gold"
+      >
+        <Icon className="h-4 w-4" strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+};
 
 export const Textarea = ({
   className,

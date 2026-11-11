@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { Button, Input, FormField } from "@/components/ui";
+import { Button, Input, PasswordInput, FormField } from "@/components/ui";
 import {
   loginAction,
   registerUser,
@@ -54,7 +54,7 @@ export function LoginForm({
           <Input name="email" type="email" required autoComplete="email" placeholder="you@email.com" />
         </FormField>
         <FormField label="Password">
-          <Input name="password" type="password" required autoComplete="current-password" placeholder="••••••••" />
+          <PasswordInput name="password" required autoComplete="current-password" placeholder="••••••••" />
         </FormField>
         {state?.error && <p className="mb-3 text-sm text-red">{state.error}</p>}
         <Button type="submit" variant="gold" size="lg" loading={pending} className="w-full justify-center">
@@ -72,9 +72,6 @@ export function LoginForm({
           <p className="mt-6 text-center text-sm text-muted">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="text-gold">Create one</Link>
-          </p>
-          <p className="mt-3 text-center text-[11px] text-muted">
-            Demo: amelia@email.com / password123 · admin@sapphirevibes.au / password123
           </p>
         </>
       )}
@@ -96,7 +93,7 @@ export function RegisterForm() {
           <Input name="email" type="email" required autoComplete="email" placeholder="you@email.com" />
         </FormField>
         <FormField label="Password">
-          <Input name="password" type="password" required autoComplete="new-password" placeholder="At least 6 characters" />
+          <PasswordInput name="password" required autoComplete="new-password" placeholder="At least 6 characters" />
         </FormField>
         {state?.error && <p className="mb-3 text-sm text-red">{state.error}</p>}
         <Button type="submit" variant="gold" size="lg" loading={pending} className="w-full justify-center">

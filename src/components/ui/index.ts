@@ -15,6 +15,7 @@ export { ProgressBar, StockBar } from "./ProgressBar";
 export { StatCard, MiniStat, SummaryCard } from "./StatCard";
 export {
   Input,
+  PasswordInput,
   Textarea,
   Select,
   FieldLabel,

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 
 const db = new PrismaClient();
 
@@ -27,7 +28,11 @@ async function main() {
     `TRUNCATE TABLE ${ALL_TABLES.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE`,
   );
 
-  const password = await bcrypt.hash("password123", 10);
+  // Set SEED_PASSWORD for a repeatable local login; otherwise a random one is
+  // generated and printed once below. Never a known default in source: this script
+  // truncates every table and must never reach production.
+  const seedPassword = process.env.SEED_PASSWORD || crypto.randomBytes(12).toString("base64url");
+  const password = await bcrypt.hash(seedPassword, 10);
 
   // ── VIP tiers ───────────────────────────────────────────────────────────
   const silver = await db.vipTier.create({
@@ -522,8 +527,9 @@ async function main() {
   await db.wishlistItem.createMany({ data: ["DEC-MAR-007", "LGT-ALA-022", "DEC-MIR-019", "FRN-VEL-014", "FRG-CAN-005", "SFT-WOL-031"].map((sku) => ({ userId: amelia.id, productId: productIds[sku] })) });
 
   console.log("✅ Seed complete.");
-  console.log("   Demo login (all accounts): password123");
+  console.log(`   Seeded password (all accounts): ${seedPassword}`);
   console.log("   Customer: amelia@email.com   ·   Admin: admin@sapphirevibes.au   ·   Marketing: marketing@sapphirevibes.au");
+  console.log("   These are local fixtures. Never seed production.");
 }
 
 main()

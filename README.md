@@ -30,16 +30,17 @@ Authentication is **email/password + Google + guest checkout** with role-based a
 
 ---
 
-## Demo logins
+## Local seed logins
 
-After seeding, every account uses the password **`password123`**:
+`npm run db:seed` creates local fixture accounts. It reads `SEED_PASSWORD` from the
+environment, or generates a random password and prints it once when the seed finishes.
 
-| Role | Email |
-|---|---|
-| Customer (VIP / Gold) | `amelia@email.com` |
-| Super Admin | `admin@sapphirevibes.au` |
-| Marketing Manager | `marketing@sapphirevibes.au` |
-| Catalogue Manager | `priya@sapphirevibes.au` |
+The seeded roles are a customer, a super admin, a marketing manager and a catalogue
+manager. The emails are printed alongside the password.
+
+**The seed truncates every table. Never run it against production.** Create the
+production owner with `npm run db:create-admin`, which reads `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` and does not touch any other data.
 
 ---
 

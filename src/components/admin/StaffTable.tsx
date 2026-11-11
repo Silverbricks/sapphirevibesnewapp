@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { UserPlus, X, Settings2 } from "lucide-react";
-import { Avatar, Pill, Button, Input, Select, FormField, Toggle } from "@/components/ui";
+import { Avatar, Pill, Button, Input, PasswordInput, Select, FormField, Toggle } from "@/components/ui";
 import { timeAgo } from "@/lib/format";
 import {
   saveStaffMember,
@@ -69,7 +69,7 @@ export function StaffTable({ staff, canManage }: { staff: Staff[]; canManage: bo
                 {ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
               </Select>
             </FormField>
-            <FormField label="Password (min 6)"><Input name="password" type="password" placeholder="Set for new members" /></FormField>
+            <FormField label="Password (min 6)"><PasswordInput name="password" placeholder="Set for new members" /></FormField>
           </div>
           {state?.error && <p className="mb-3 text-sm text-red">{state.error}</p>}
           <Button type="submit" variant="gold" loading={pending}>Save Member</Button>
@@ -163,7 +163,7 @@ function ManageModal({ member, onClose }: { member: Staff; onClose: () => void }
 
           <div className="border-t border-line pt-4">
             <FormField label="Reset Password (min 6)">
-              <Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="New password" />
+              <PasswordInput value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="New password" />
             </FormField>
             <Button
               variant="dark"

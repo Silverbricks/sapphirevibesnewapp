@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { X, Settings2 } from "lucide-react";
-import { Pill, Input, Select, FormField, Button, type PillColor } from "@/components/ui";
+import { Pill, Input, PasswordInput, Select, FormField, Button, type PillColor } from "@/components/ui";
 import { saveIntegration } from "@/actions/settings";
 
 interface Integration {
@@ -73,7 +73,7 @@ function IntegrationModal({ integration, onClose }: { integration: Integration; 
               <option value="DISCONNECTED">Disconnected</option>
             </Select>
           </FormField>
-          <FormField label="API Key"><Input name="apiKey" type="password" defaultValue={cfg.apiKey ?? ""} placeholder="••••••••" /></FormField>
+          <FormField label="API Key"><PasswordInput name="apiKey" defaultValue={cfg.apiKey ?? ""} placeholder="••••••••" /></FormField>
           <FormField label="Webhook URL"><Input name="webhookUrl" defaultValue={cfg.webhookUrl ?? ""} placeholder="https://…" /></FormField>
           <Button type="submit" variant="gold" loading={pending}>Save Integration</Button>
         </form>
