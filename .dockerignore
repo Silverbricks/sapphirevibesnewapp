@@ -1,0 +1,20 @@
+# Build context hygiene: anything here is rebuilt inside the image or injected
+# at runtime. Shipping it would bloat the context and risk baking in secrets.
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+npm-debug.log*
+*.log
+
+# Uploads live on a mounted volume, never in the image — see Dockerfile.
+public/uploads
+
+# Local-only tooling that has no meaning inside the container.
+docker-compose.yml
+deploy-vps.sh
+link-domain.sh
+add-sites.sh
+README.md

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emit .next/standalone so the Docker runtime image can ship the server
+  // without node_modules. Harmless outside Docker: `next start` still works.
+  output: "standalone",
   eslint: {
     // ESLint is configured/run separately (Phase 8); don't block production builds on it.
     ignoreDuringBuilds: true,
